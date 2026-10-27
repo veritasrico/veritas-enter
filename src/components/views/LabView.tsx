@@ -187,9 +187,6 @@ export const LabView: React.FC<LabViewProps> = ({
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
             Operasional Laboratorium &amp; Work Order
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Pencatatan sampel, penugasan analis, pelacakan running instrumen, dan pencatatan log otomatis saat selesai
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

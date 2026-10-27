@@ -94,9 +94,6 @@ export const MasterInstrumentsView: React.FC<MasterInstrumentsViewProps> = ({
             <Cpu className="h-5 w-5 text-emerald-600" />
             <span>Master Instrumen Laboratorium</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Daftar instrumen analisis, target kapasitas harian, interval kalibrasi KAN, dan jadwal Preventive Maintenance (PM)
-          </p>
         </div>
 
         <button

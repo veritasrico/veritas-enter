@@ -252,18 +252,10 @@ export const LogisticsModule: React.FC<LogisticsModuleProps> = ({
       {/* Header Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-wider">
-              KELOMPOK 7
-            </span>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-emerald-600" />
-              <span>Logistik &amp; Supply Chain Management</span>
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Pengelolaan pengadaan bahan kimia, suku cadang instrumen, PO vendor, serta logistik rantai dingin (cold chain) sampel laboratorium.
-          </p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-emerald-600" />
+            <span>Logistik &amp; Supply Chain Management</span>
+          </h2>
         </div>
 
         {/* Global Action Toolbar */}

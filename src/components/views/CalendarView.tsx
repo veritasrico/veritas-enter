@@ -529,9 +529,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <CalendarIcon className="h-5 w-5 text-emerald-600" />
             <span>Kalender Terpadu &bull; Sales, Marketing &amp; Laboratorium</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Matriks tahunan terintegrasi: pantau agenda, isi form kebutuhan tiap divisi, atau klik tanggal untuk menjadwalkan
-          </p>
         </div>
 
         {/* Year Switcher for Desktop & Mode Switcher */}

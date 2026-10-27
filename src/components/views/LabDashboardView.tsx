@@ -134,9 +134,6 @@ export const LabDashboardView: React.FC<LabDashboardViewProps> = ({
             <FlaskConical className="h-6 w-6 text-emerald-600" />
             <span>Dashboard Laboratorium &amp; Analitik Sampel</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Perhitungan sampel presisi: <b>Basis ID Sampel Unik</b> untuk entitas fisik &amp; <b>Beban Per-Instrumen</b> untuk kapasitas uji
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -237,34 +234,6 @@ export const LabDashboardView: React.FC<LabDashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Clear Methodological Clarification Banner with XRD & SEM Case Example */}
-      <div className="rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 via-emerald-50 to-slate-50 p-5 dark:border-teal-900 dark:from-teal-950/40 dark:via-emerald-950/30 dark:to-slate-900 shadow-xs">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-white shrink-0 mt-0.5 shadow-xs">
-            <HelpCircle className="h-5 w-5" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-bold text-teal-950 dark:text-teal-200">
-                Kalkulasi Presisi Veritas: Basis ID Sampel Unik vs. Beban Per-Instrumen
-              </h3>
-              <span className="rounded-full bg-teal-200/70 dark:bg-teal-800 px-2 py-0.2 text-[10px] font-bold text-teal-900 dark:text-teal-100">
-                Standar Verifikasi Mutu
-              </span>
-            </div>
-            
-            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-              &bull; <b>Kalkulasi Bulanan Sampel (Basis ID Sampel):</b> Dihitung sesuai kuantitas sampel fisik yang tertera pada ID Sampel. 
-              <br />
-              <span className="inline-block mt-1 pl-3 border-l-2 border-teal-500 text-teal-900 dark:text-teal-200 font-medium">
-                <b>Contoh Kasus (10 Sampel untuk XRD &amp; SEM):</b> Jika pelanggan mengirim 10 sampel fisik dalam satu ID Sampel (misal <code>SMP-2026-001</code>) untuk diuji pada 2 jenis layanan yaitu <b>XRD</b> dan <b>SEM</b>, maka dalam kalkulasi bulanan sampel masuk <b>tetap dihitung 10 sampel fisik</b> (tidak digandakan menjadi 20).
-              </span>
-              <br />
-              &bull; <b>Kalkulasi Per-Instrumen:</b> Tetap dihitung berdasarkan <b>setiap sampel yang teranalisa pada masing-masing instrumen</b>. Instrumen XRD mencatat 10 sampel teranalisa dan instrumen SEM mencatat 10 sampel teranalisa (sehingga beban pengujian alat total adalah 20 kali running), guna memantau kapasitas dan utilisasi alat secara presisi.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Per-Instrument Breakdown Table */}
       <div className="space-y-3">

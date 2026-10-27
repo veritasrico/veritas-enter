@@ -272,17 +272,17 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-md bg-emerald-500/30 border border-emerald-400/40 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-300">
-                  DASHBOARD OVERVIEW &bull; KELOMPOK 1
+                  DASHBOARD OVERVIEW
                 </span>
                 <span className="rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-bold text-slate-200">
-                  Mata Uang: Rupiah (Rp IDR)
+                  Rp IDR
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
                 VERITAS ENTERPRISE BUSINESS APP
               </h1>
               <p className="text-xs text-slate-300 font-medium">
-                PT NUSA VERITAS INSPEKTAMA &bull; Integrated Business Intelligence (Sales, Operasional Lab &amp; Keuangan Terpadu)
+                PT NUSA VERITAS INSPEKTAMA
               </p>
             </div>
           </div>

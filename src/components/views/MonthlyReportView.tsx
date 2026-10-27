@@ -109,9 +109,6 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({ state, onO
             <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
             <span>Laporan Bulanan &amp; Integrasi API</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Rekapitulasi otomatis bulanan, kalkulasi sampel unik vs instrumen, dan endpoint API terintegrasi
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

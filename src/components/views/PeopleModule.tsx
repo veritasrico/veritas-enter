@@ -241,18 +241,10 @@ export const PeopleModule: React.FC<PeopleModuleProps> = ({
       {/* Header Banner */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-wider">
-              KELOMPOK 8
-            </span>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Award className="h-5 w-5 text-indigo-600" />
-              <span>People, Manpower &amp; Kompetensi ISO/IEC 17025</span>
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Pemenuhan klausul 6.2 ISO/IEC 17025 (Personel): kualifikasi analis, otorisasi alat &amp; metode uji, sertifikasi K3/BNSP, evaluasi berkala, dan direktori tim.
-          </p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Award className="h-5 w-5 text-indigo-600" />
+            <span>People, Manpower &amp; Kompetensi ISO/IEC 17025</span>
+          </h2>
         </div>
 
         {/* Global Action Toolbar */}

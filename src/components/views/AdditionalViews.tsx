@@ -44,7 +44,6 @@ export const ActivitiesView: React.FC<{
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Aktivitas Sales &amp; Follow-Up</h2>
-          <p className="text-xs text-slate-500">Catatan pertemuan, penawaran, panggilan telepon, dan tindak lanjut lead</p>
         </div>
         <button onClick={() => { setForm({ id: uid(), accId: accounts[0]?.id || '', type: 'Follow-up', date: today(), status: 'Terjadwal', note: '' }); setIsOpen(true); }} className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
           + Tambah Aktivitas
@@ -203,7 +202,6 @@ export const MarketingView: React.FC<{
             <Megaphone className="h-5 w-5 text-emerald-600" />
             <span>Digital Marketing &amp; Perolehan Lead</span>
           </h2>
-          <p className="text-xs text-slate-500">Evaluasi performa multichannel (LinkedIn, Instagram, TikTok, YouTube, Exhibition), reach, klik, link publikasi, dan Cost Per Lead (CPL)</p>
         </div>
         <div className="flex items-center gap-2">
           {onOpenImportExcel && (
@@ -513,7 +511,6 @@ export const InstrumentsView: React.FC<{
             <ShieldAlert className="h-5 w-5 text-emerald-600" />
             <span>Kejadian Downtime &amp; Pemeliharaan Instrumen</span>
           </h2>
-          <p className="text-xs text-slate-500">Pencatatan gangguan operasional, trouble kelistrikan/optik, gas argon, kontaminasi detektor, chiller/pompa vakum, kalibrasi, dan PM</p>
         </div>
         <button
           onClick={() => {
@@ -719,7 +716,6 @@ export const InventoryView: React.FC<{
             <Package className="h-5 w-5 text-emerald-600" />
             <span>Inventori Reagen &amp; Consumables</span>
           </h2>
-          <p className="text-xs text-slate-500">Stok suku cadang instrumen, reagen pengujian, dan peringatan batas minimum</p>
         </div>
         <button onClick={() => { setForm({ id: uid(), name: '', inst: 'SEM', unit: 'pcs', stock: 5, min: 2, note: '' }); setIsOpen(true); }} className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
           + Tambah Item
@@ -891,9 +887,6 @@ export const CatalogView: React.FC<{
             <BookOpen className="h-5 w-5 text-emerald-600" />
             <span>Katalog Layanan &amp; Status Operasional</span>
           </h2>
-          <p className="text-xs text-slate-500">
-            Daftar tarif acuan pengujian laboratorium, status ketersediaan layanan, dan catatan keterangan penutupan layanan
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {closedCount > 0 && (
@@ -1209,7 +1202,6 @@ export const SettingsView: React.FC<{
           <Settings className="h-5 w-5 text-emerald-600" />
           <span>Pengaturan Perusahaan, Sinkronisasi Awan &amp; Integrasi</span>
         </h2>
-        <p className="text-xs text-slate-500">Konfigurasi profil perusahaan untuk dokumen PDF, gateway WhatsApp, dan sinkronisasi awan</p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">

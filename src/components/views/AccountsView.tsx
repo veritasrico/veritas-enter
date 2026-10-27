@@ -139,9 +139,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
             Kontak &amp; Perusahaan
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Daftar pelanggan, institusi mitra, klasifikasi <b>Segmen</b> industri, dan sinyal follow-up referral
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

@@ -41,9 +41,6 @@ export const LogBookView: React.FC<LogBookViewProps> = ({ logs, isAdmin = false,
             <History className="h-5 w-5 text-emerald-600" />
             <span>Log Book &amp; Audit Trail Sistem</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Pencatatan kepatuhan otomatis: mencatat setiap kali instrumen selesai diproses, perubahan data, dan akses pengguna
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

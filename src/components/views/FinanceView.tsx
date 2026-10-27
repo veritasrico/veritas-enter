@@ -174,9 +174,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             <CreditCard className="h-5 w-5 text-emerald-600" />
             <span>Keuangan, Penagihan &amp; Invoice</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Monitoring arus kas, penagihan dari penawaran disetujui &amp; ID sampel work order, status lunas, dan notifikasi WhatsApp
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

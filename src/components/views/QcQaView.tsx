@@ -494,9 +494,6 @@ export const QcQaView: React.FC<QcQaViewProps> = ({
             <ShieldCheck className="h-6 w-6 text-emerald-600" />
             <span>Panel QC/QA &amp; Kepatuhan Mutu Laboratorium</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Checklist harian GLP, penanganan temuan ketidaksesuaian &amp; CAPA, serta audit kesiapan akreditasi ISO 17025.
-          </p>
         </div>
 
         {/* Global Action Tools */}

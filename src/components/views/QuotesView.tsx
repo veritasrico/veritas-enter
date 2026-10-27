@@ -189,9 +189,6 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             <FileText className="h-5 w-5 text-emerald-600" />
             <span>Surat Penawaran Harga (Quotations)</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Penerbitan surat penawaran resmi, integrasi katalog uji &amp; tarif, kelengkapan koresponden, dan pengiriman WhatsApp
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

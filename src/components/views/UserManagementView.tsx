@@ -186,9 +186,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               Role-Based Access Control (RBAC)
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Atur akun staf tim di seluruh laptop, batasi modul yang dapat dibuka (Sales, Lab, QA/QC, Finance), dan amankan akun dengan PIN.
-          </p>
         </div>
 
         <button
@@ -200,20 +197,6 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
         </button>
       </div>
 
-      {/* Info Notice */}
-      <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/40 text-xs text-blue-900 dark:text-blue-200">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-bold mb-1">
-              Prinsip Pembatasan Akses di Semua Laptop (Sinkron Otomatis):
-            </p>
-            <p className="text-[11px] leading-relaxed text-blue-800 dark:text-blue-300">
-              Setiap laptop yang login dengan akun tertentu hanya akan melihat modul/menu yang dicentang di halaman ini. Modul sensitif di luar hak akses staf akan otomatis disembunyikan dari sidebar navigasi. Semua pengaturan ini otomatis tersimpan di cloud database (<code>cloud_db_store.json</code>).
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Filter and Stats Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
