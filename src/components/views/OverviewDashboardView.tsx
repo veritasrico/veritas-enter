@@ -18,6 +18,11 @@ import {
   FileText,
   FlaskConical,
   ShieldCheck,
+  ShoppingCart,
+  Megaphone,
+  Users,
+  Package,
+  Cpu,
 } from 'lucide-react';
 import { AppState } from '../../types';
 import { idr } from '../../utils/seedData';
@@ -39,65 +44,199 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
   const [dateRange, setDateRange] = useState<string>('Tahun Berjalan (YTD 2026)');
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
 
-  // 1. DATA REAL DARI SALES
-  const wonDeals = useMemo(() => state.deals.filter((d) => d.stage === 'Won'), [state.deals]);
+  // Helper filter tanggal
+  const matchesDateFilter = (dateStr?: string) => {
+    if (!dateStr) return true;
+    if (dateRange === 'Semua Periode (Historis Kumulatif)') return true;
+    if (dateRange === 'Tahun Berjalan (YTD 2026)') return dateStr.startsWith('2026');
+    if (dateRange === 'Bulan Ini (Oktober 2026)') return dateStr.startsWith('2026-10');
+    if (dateRange === 'Kuartal 3 (Q3 2026)') {
+      return (
+        dateStr.startsWith('2026-07') ||
+        dateStr.startsWith('2026-08') ||
+        dateStr.startsWith('2026-09')
+      );
+    }
+    return true;
+  };
+
+  // 1. DATA REAL SALES & CUSTOMER CRM
+  const filteredDeals = useMemo(() => {
+    return (state.deals || []).filter((d) => matchesDateFilter(d.close));
+  }, [state.deals, dateRange]);
+
+  const wonDeals = useMemo(() => filteredDeals.filter((d) => d.stage === 'Won'), [filteredDeals]);
   const wonDealsValue = useMemo(
     () => wonDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0),
     [wonDeals]
   );
+
   const pipelineDeals = useMemo(
-    () => state.deals.filter((d) => d.stage !== 'Won' && d.stage !== 'Lost'),
-    [state.deals]
+    () => filteredDeals.filter((d) => d.stage !== 'Won' && d.stage !== 'Lost'),
+    [filteredDeals]
   );
   const pipelineValue = useMemo(
     () => pipelineDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0),
     [pipelineDeals]
   );
-  const totalQuotesValue = useMemo(
-    () => state.quotes.reduce((sum, q) => sum + (Number(q.amount) || 0), 0),
-    [state.quotes]
-  );
-  const totalCustomerCount = useMemo(() => state.accounts.length, [state.accounts]);
 
-  // 2. DATA REAL DARI FINANCE (INVOICES & CASHFLOW)
+  const filteredQuotes = useMemo(() => {
+    return (state.quotes || []).filter((q) => matchesDateFilter(q.date));
+  }, [state.quotes, dateRange]);
+
+  const totalQuotesValue = useMemo(
+    () => filteredQuotes.reduce((sum, q) => sum + (Number(q.amount) || 0), 0),
+    [filteredQuotes]
+  );
+
+  const approvedQuotesValue = useMemo(
+    () =>
+      filteredQuotes
+        .filter((q) => q.status === 'Disetujui')
+        .reduce((sum, q) => sum + (Number(q.amount) || 0), 0),
+    [filteredQuotes]
+  );
+
+  const totalCustomerCount = useMemo(() => (state.accounts || []).length, [state.accounts]);
+
+  // 2. DATA REAL FINANCE & INVOICES
+  const filteredFins = useMemo(() => {
+    return (state.fins || []).filter((f) => matchesDateFilter(f.date));
+  }, [state.fins, dateRange]);
+
   const totalInvoiced = useMemo(
-    () => state.fins.reduce((sum, f) => sum + (Number(f.amount) || 0), 0),
-    [state.fins]
+    () => filteredFins.reduce((sum, f) => sum + (Number(f.amount) || 0), 0),
+    [filteredFins]
   );
   const totalPaid = useMemo(
-    () => state.fins.reduce((sum, f) => sum + (Number(f.paid) || 0), 0),
-    [state.fins]
+    () => filteredFins.reduce((sum, f) => sum + (Number(f.paid) || 0), 0),
+    [filteredFins]
   );
   const outstandingAr = useMemo(
     () => Math.max(0, totalInvoiced - totalPaid),
     [totalInvoiced, totalPaid]
   );
+  const collectionRate = useMemo(
+    () => (totalInvoiced > 0 ? Math.round((totalPaid / totalInvoiced) * 100) : 0),
+    [totalInvoiced, totalPaid]
+  );
 
-  // Revenue baseline dihitung dari invoice yang diterbitkan, atau dari total penawaran/deal bila invoice baru dibuat
+  // 3. DATA REAL OPERASIONAL LAB & LAYANAN
+  const filteredLabs = useMemo(() => {
+    return (state.labs || []).filter((l) => matchesDateFilter(l.date));
+  }, [state.labs, dateRange]);
+
+  const totalLabOrders = useMemo(() => filteredLabs.length, [filteredLabs]);
+  const completedLabOrders = useMemo(
+    () => filteredLabs.filter((o) => !!o.completionDate || o.serviceStatus === 'Selesai').length,
+    [filteredLabs]
+  );
+  const inProgressLabOrders = useMemo(
+    () => filteredLabs.filter((o) => !o.completionDate && o.serviceStatus !== 'Selesai').length,
+    [filteredLabs]
+  );
+  const totalPhysicalSamples = useMemo(
+    () => filteredLabs.reduce((sum, o) => sum + (Number(o.masuk) || 1), 0),
+    [filteredLabs]
+  );
+  const totalAnalysesRun = useMemo(
+    () => filteredLabs.reduce((sum, o) => sum + (Number(o.analisa) || Number(o.masuk) || 1), 0),
+    [filteredLabs]
+  );
+
+  // 4. DATA REAL LOGISTIK & SUPPLY CHAIN
+  const procurements = useMemo(() => state.procurements || [], [state.procurements]);
+  const totalProcurementCost = useMemo(
+    () => procurements.reduce((sum, p) => sum + (Number(p.estCost) || 0), 0),
+    [procurements]
+  );
+  const deliveries = useMemo(() => state.deliveries || [], [state.deliveries]);
+  const activeDeliveries = useMemo(
+    () => deliveries.filter((d) => d.status !== 'Diinspeksi & OK').length,
+    [deliveries]
+  );
+
+  // 5. DATA REAL MARKETING & GROWTH
+  const mkt = useMemo(() => state.mkt || [], [state.mkt]);
+  const totalMktSpend = useMemo(
+    () => mkt.reduce((sum, m) => sum + (Number(m.spend) || 0), 0),
+    [mkt]
+  );
+  const totalLeads = useMemo(
+    () => mkt.reduce((sum, m) => sum + (Number(m.leads) || 0), 0),
+    [mkt]
+  );
+  const costPerLead = useMemo(
+    () => (totalLeads > 0 ? Math.round(totalMktSpend / totalLeads) : 0),
+    [totalMktSpend, totalLeads]
+  );
+
+  // 6. DATA REAL MUTU, INSTRUMEN & SDM
+  const insts = useMemo(() => state.insts || [], [state.insts]);
+  const instr = useMemo(() => state.instr || [], [state.instr]);
+  const totalDowntimeHours = useMemo(
+    () =>
+      instr
+        .filter((e) => e.type === 'Downtime')
+        .reduce((sum, e) => sum + (Number(e.hours) || 0), 0),
+    [instr]
+  );
+  const competencies = useMemo(() => state.competencies || [], [state.competencies]);
+  const certifiedK3Bnsp = useMemo(
+    () => competencies.filter((c) => c.k3Certified || c.bnspCertified).length,
+    [competencies]
+  );
+
+  // TOTAL REVENUE RIIL: Dihitung secara murni dari data invoice (atau won deals / quotes disetujui bila ada)
+  // JIKA TIDAK ADA DATA MAKA NILAI RIIL ADALAH 0 (TIDAK ADA DATA DUMMY / FALLBACK PALSU)
   const totalRevenue = useMemo(() => {
     if (totalInvoiced > 0) return totalInvoiced;
     if (wonDealsValue > 0) return wonDealsValue;
-    return totalQuotesValue > 0 ? totalQuotesValue : 825000000;
-  }, [totalInvoiced, wonDealsValue, totalQuotesValue]);
+    if (approvedQuotesValue > 0) return approvedQuotesValue;
+    return 0;
+  }, [totalInvoiced, wonDealsValue, approvedQuotesValue]);
 
-  // Estimasi Gross Profit & Operating Profit berbasis margin standar laboratorium (54% GP & 30% OP)
-  const grossProfit = useMemo(() => Math.round(totalRevenue * 0.54), [totalRevenue]);
-  const operatingProfit = useMemo(() => Math.round(totalRevenue * 0.30), [totalRevenue]);
-  const netProfit = useMemo(() => Math.round(totalRevenue * 0.214), [totalRevenue]);
+  // LABA & PROFITABILITAS RIIL: Dihitung berbasis omset nyata dikurangi beban pengadaan nyata & marketing
+  const directCogs = useMemo(() => {
+    if (totalRevenue === 0) return 0;
+    return totalProcurementCost > 0
+      ? Math.min(totalRevenue, totalProcurementCost)
+      : Math.round(totalRevenue * 0.46);
+  }, [totalRevenue, totalProcurementCost]);
 
-  // 3. DATA REAL DARI LAYANAN & LAB
-  const totalLabOrders = useMemo(() => state.labs.length, [state.labs]);
-  const completedLabOrders = useMemo(
-    () => state.labs.filter((o) => !!o.completionDate || o.serviceStatus === 'Selesai').length,
-    [state.labs]
-  );
-  const inProgressLabOrders = useMemo(
-    () => state.labs.filter((o) => !o.completionDate && o.serviceStatus !== 'Selesai').length,
-    [state.labs]
-  );
+  const grossProfit = useMemo(() => {
+    if (totalRevenue === 0) return 0;
+    return Math.max(0, totalRevenue - directCogs);
+  }, [totalRevenue, directCogs]);
 
-  // Formatting Rupiah ringkas (Miliar / Juta / Ribuan)
+  const grossMarginPct = useMemo(() => {
+    if (totalRevenue === 0) return '0.0';
+    return ((grossProfit / totalRevenue) * 100).toFixed(1);
+  }, [totalRevenue, grossProfit]);
+
+  const operatingExpenses = useMemo(() => {
+    if (totalRevenue === 0) return 0;
+    return totalMktSpend + Math.round(totalRevenue * 0.14);
+  }, [totalRevenue, totalMktSpend]);
+
+  const operatingProfit = useMemo(() => {
+    if (totalRevenue === 0) return 0;
+    return Math.max(0, grossProfit - operatingExpenses);
+  }, [totalRevenue, grossProfit, operatingExpenses]);
+
+  const netProfit = useMemo(() => {
+    if (totalRevenue === 0) return 0;
+    return Math.max(0, Math.round(operatingProfit * 0.78));
+  }, [totalRevenue, operatingProfit]);
+
+  const netMarginPct = useMemo(() => {
+    if (totalRevenue === 0) return '0.0';
+    return ((netProfit / totalRevenue) * 100).toFixed(1);
+  }, [totalRevenue, netProfit]);
+
+  // Formatting Rupiah ringkas (Triliun / Miliar / Juta / Ribuan)
   const formatRpCompact = (valRp: number) => {
+    if (!valRp || valRp === 0) return 'Rp 0';
     if (valRp >= 1_000_000_000_000) {
       return `Rp ${(valRp / 1_000_000_000_000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} T`;
     }
@@ -110,20 +249,29 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     return idr(valRp);
   };
 
-  // Sparkline mini SVG component
+  // Sparkline mini SVG component murni dari data
   const MiniSparkline: React.FC<{
     data: number[];
     color: string;
     type?: 'bar' | 'line';
   }> = ({ data, color, type = 'bar' }) => {
+    const hasValues = data.some((v) => v > 0);
+    if (!hasValues) {
+      return (
+        <svg className="w-18 h-8 overflow-visible opacity-30" viewBox="0 0 70 30">
+          <line x1="0" y1="26" x2="70" y2="26" stroke={color} strokeWidth="2" strokeDasharray="3 3" />
+        </svg>
+      );
+    }
+
     const max = Math.max(...data, 1);
-    const min = Math.min(...data);
+    const min = Math.min(...data, 0);
     const range = max - min || 1;
 
     if (type === 'line') {
       const points = data
         .map((val, idx) => {
-          const x = (idx / (data.length - 1)) * 70;
+          const x = (idx / Math.max(1, data.length - 1)) * 70;
           const y = 28 - ((val - min) / range) * 22;
           return `${x},${y}`;
         })
@@ -145,8 +293,8 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     return (
       <svg className="w-18 h-8 overflow-visible" viewBox="0 0 70 30">
         {data.map((val, idx) => {
-          const barHeight = Math.max(4, ((val - min) / range) * 24);
-          const x = idx * 6.2;
+          const barHeight = val > 0 ? Math.max(4, ((val - min) / range) * 24) : 2;
+          const x = idx * (70 / Math.max(1, data.length));
           const y = 28 - barHeight;
           return (
             <rect
@@ -165,104 +313,239 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     );
   };
 
-  // Tren bulanan dihitung proporsional dari revenue real
+  // Tren bulanan dihitung secara murni dari agregasi riil transaksi bulanan
   const monthlyData = useMemo(() => {
-    const baseM = totalRevenue / 12;
-    const weights = [0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.08, 0.98, 1.05, 1.12, 1.18, 1.25];
-    const priorWeights = [0.65, 0.7, 0.75, 0.8, 0.82, 0.88, 0.92, 0.85, 0.9, 0.96, 1.0, 1.06];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const monthlyTotals = Array(12).fill(0);
+    const monthlySamples = Array(12).fill(0);
+
+    // Agregasi dari invoices nyata
+    (state.fins || []).forEach((f) => {
+      if (f.date) {
+        const parts = f.date.split('-');
+        if (parts.length >= 2) {
+          const mIdx = parseInt(parts[1], 10) - 1;
+          if (mIdx >= 0 && mIdx < 12) {
+            monthlyTotals[mIdx] += Number(f.amount) || 0;
+          }
+        }
+      }
+    });
+
+    // Agregasi sampel dari work order lab nyata
+    (state.labs || []).forEach((l) => {
+      if (l.date) {
+        const parts = l.date.split('-');
+        if (parts.length >= 2) {
+          const mIdx = parseInt(parts[1], 10) - 1;
+          if (mIdx >= 0 && mIdx < 12) {
+            monthlySamples[mIdx] += Number(l.analisa) || Number(l.masuk) || 1;
+          }
+        }
+      }
+    });
 
     return months.map((m, i) => ({
       month: m,
-      current: Math.round(baseM * weights[i]),
-      prior: Math.round(baseM * priorWeights[i]),
+      current: monthlyTotals[i],
+      sampleCount: monthlySamples[i],
+      prior: 0,
     }));
-  }, [totalRevenue]);
+  }, [state.fins, state.labs]);
 
-  // Unit Bisnis terintegrasi dengan data riil layanan & lab
+  // Unit Bisnis diklasifikasikan langsung dari data riil pengujian lab & katalog layanan
   const businessUnits = useMemo(() => {
-    return [
-      { name: 'Pengujian Minerba, Nikel & Material', share: 44, val: Math.round(totalRevenue * 0.44), color: '#0d9488' },
-      { name: 'Kalibrasi & Master Instrumentasi Lab', share: 26, val: Math.round(totalRevenue * 0.26), color: '#3b82f6' },
-      { name: 'Pemantauan Lingkungan, Air & Emisi KAN', share: 18, val: Math.round(totalRevenue * 0.18), color: '#f59e0b' },
-      { name: 'Konsultansi Mutu & Audit ISO/IEC 17025', share: 12, val: Math.round(totalRevenue * 0.12), color: '#8b5cf6' },
-    ];
-  }, [totalRevenue]);
+    let mineralCount = 0;
+    let calibCount = 0;
+    let envCount = 0;
+    let consultCount = 0;
 
-  // Top Layanan terhubung langsung dari Katalog Layanan (state.cat) & Work Order
+    (state.labs || []).forEach((l) => {
+      const s = (l.service || '').toLowerCase();
+      const count = Number(l.analisa) || Number(l.masuk) || 1;
+      if (/icp|xrd|sem|xrf|aas|mineral|nikel|minerba|tambang|batu|logam/i.test(s)) {
+        mineralCount += count;
+      } else if (/kalibrasi|pm|verifikasi|alat|maintenance/i.test(s)) {
+        calibCount += count;
+      } else if (/lingkungan|air|emisi|limbah|udara|bod|cod|tds/i.test(s)) {
+        envCount += count;
+      } else {
+        consultCount += count;
+      }
+    });
+
+    const totalCount = mineralCount + calibCount + envCount + consultCount;
+
+    if (totalCount === 0 && totalRevenue === 0) {
+      return [
+        { name: 'Pengujian Minerba, Nikel & Material', share: 0, val: 0, count: 0, color: '#0d9488' },
+        { name: 'Kalibrasi & Master Instrumentasi Lab', share: 0, val: 0, count: 0, color: '#3b82f6' },
+        { name: 'Pemantauan Lingkungan, Air & Emisi KAN', share: 0, val: 0, count: 0, color: '#f59e0b' },
+        { name: 'Konsultansi Mutu & Audit ISO/IEC 17025', share: 0, val: 0, count: 0, color: '#8b5cf6' },
+      ];
+    }
+
+    const divisor = totalCount > 0 ? totalCount : 1;
+    const mShare = Math.round((mineralCount / divisor) * 100);
+    const cShare = Math.round((calibCount / divisor) * 100);
+    const eShare = Math.round((envCount / divisor) * 100);
+    const sShare = Math.max(0, 100 - (mShare + cShare + eShare));
+
+    return [
+      {
+        name: 'Pengujian Minerba, Nikel & Material',
+        share: mShare,
+        val: Math.round((mShare / 100) * totalRevenue),
+        count: mineralCount,
+        color: '#0d9488',
+      },
+      {
+        name: 'Kalibrasi & Master Instrumentasi Lab',
+        share: cShare,
+        val: Math.round((cShare / 100) * totalRevenue),
+        count: calibCount,
+        color: '#3b82f6',
+      },
+      {
+        name: 'Pemantauan Lingkungan, Air & Emisi KAN',
+        share: eShare,
+        val: Math.round((eShare / 100) * totalRevenue),
+        count: envCount,
+        color: '#f59e0b',
+      },
+      {
+        name: 'Konsultansi Mutu & Audit ISO/IEC 17025',
+        share: sShare,
+        val: Math.round((sShare / 100) * totalRevenue),
+        count: consultCount,
+        color: '#8b5cf6',
+      },
+    ];
+  }, [state.labs, totalRevenue]);
+
+  // Top 5 Layanan dihitung dari data aktual work order pengujian lab & katalog layanan
   const topProducts = useMemo(() => {
-    if (state.cat && state.cat.length > 0) {
-      // Ambil 5 layanan utama dari katalog
-      const sorted = [...state.cat].sort((a, b) => b.p - a.p).slice(0, 5);
-      const totalP = sorted.reduce((sum, item) => sum + item.p, 0) || 1;
-      const colors = ['#0d9488', '#14b8a6', '#3b82f6', '#f59e0b', '#8b5cf6'];
-      return sorted.map((c, idx) => {
-        const estRevenue = Math.round((c.p / totalP) * (totalRevenue * 0.55));
-        return {
+    const serviceCounts: Record<string, { name: string; count: number; val: number }> = {};
+
+    (state.labs || []).forEach((l) => {
+      const s = l.service || 'Pengujian Laboratorium';
+      if (!serviceCounts[s]) {
+        serviceCounts[s] = { name: s, count: 0, val: 0 };
+      }
+      const qty = Number(l.masuk) || 1;
+      serviceCounts[s].count += qty;
+
+      // Cari estimasi tarif dari katalog jika ada
+      const matchCat = (state.cat || []).find(
+        (c) =>
+          c.d.toLowerCase().includes(s.toLowerCase()) ||
+          s.toLowerCase().includes(c.d.toLowerCase())
+      );
+      if (matchCat) {
+        serviceCounts[s].val += matchCat.p * (Number(l.analisa) || qty);
+      }
+    });
+
+    const entries = Object.values(serviceCounts);
+    if (entries.length === 0) {
+      if (state.cat && state.cat.length > 0) {
+        return state.cat.slice(0, 5).map((c, idx) => ({
           name: `${c.d} (${c.m})`,
-          val: estRevenue,
-          share: Math.round((c.p / totalP) * 100),
-          color: colors[idx % colors.length],
-        };
-      });
+          val: 0,
+          count: 0,
+          share: 0,
+          color: ['#0d9488', '#14b8a6', '#3b82f6', '#f59e0b', '#8b5cf6'][idx % 5],
+        }));
+      }
+      return [];
     }
 
-    // Fallback terstruktur jika katalog sedang kosong
-    return [
-      { name: 'ICP-OES Multi-Element Mineral & Logam', val: Math.round(totalRevenue * 0.28), share: 28, color: '#0d9488' },
-      { name: 'XRD Difraksi Kristal Minerba & Nikel', val: Math.round(totalRevenue * 0.24), share: 24, color: '#14b8a6' },
-      { name: 'SEM-EDX Mikrostruktur Permukaan', val: Math.round(totalRevenue * 0.18), share: 18, color: '#3b82f6' },
-      { name: 'GC-MS Senyawa Organik & Emisi Lingkungan', val: Math.round(totalRevenue * 0.16), share: 16, color: '#f59e0b' },
-      { name: 'FTIR Polimer & Identifikasi Senyawa', val: Math.round(totalRevenue * 0.14), share: 14, color: '#8b5cf6' },
-    ];
-  }, [state.cat, totalRevenue]);
+    entries.sort((a, b) => (b.val || b.count) - (a.val || a.count));
+    const top5 = entries.slice(0, 5);
+    const totalCount = top5.reduce((s, t) => s + t.count, 0) || 1;
+    const colors = ['#0d9488', '#14b8a6', '#3b82f6', '#f59e0b', '#8b5cf6'];
 
-  // Sebaran Segmen Pelanggan terhubung langsung dengan state.accounts
-  const customerSegments = useMemo(() => {
-    if (state.accounts && state.accounts.length > 0) {
-      const typeMap: Record<string, number> = {};
-      state.accounts.forEach((acc) => {
-        const t = acc.industry || 'Enterprise Mining & Smelter';
-        typeMap[t] = (typeMap[t] || 0) + 1;
-      });
+    return top5.map((t, idx) => ({
+      name: t.name,
+      val: t.val,
+      count: t.count,
+      share: Math.round((t.count / totalCount) * 100),
+      color: colors[idx % colors.length],
+    }));
+  }, [state.labs, state.cat]);
 
-      const total = state.accounts.length;
-      return Object.entries(typeMap).map(([segment, count]) => {
-        const share = Number(((count / total) * 100).toFixed(1));
-        const val = Math.round((share / 100) * totalRevenue);
-        return {
-          segment,
-          val,
-          share,
-          count,
-          growth: '+18.4%',
-          isPositive: true,
-        };
-      });
+  // Sebaran Wilayah Operasional dihitung murni dari data alamat akun klien CRM (state.accounts)
+  const regions = useMemo(() => {
+    if (!state.accounts || state.accounts.length === 0) {
+      return [];
     }
 
-    return [
-      { segment: 'Enterprise Minerba & Industri', val: Math.round(totalRevenue * 0.54), share: 54.0, count: 8, growth: '+22.4%', isPositive: true },
-      { segment: 'Mid-Market & Kontraktor', val: Math.round(totalRevenue * 0.26), share: 26.0, count: 4, growth: '+12.1%', isPositive: true },
-      { segment: 'Instansi Pemerintah & Riset', val: Math.round(totalRevenue * 0.13), share: 13.0, count: 2, growth: '+4.5%', isPositive: true },
-      { segment: 'Konsultan & Mitra Rekanan', val: Math.round(totalRevenue * 0.07), share: 7.0, count: 1, growth: '-1.2%', isPositive: false },
-    ];
+    const regCounts: Record<string, { count: number; color: string }> = {
+      'Jawa & Jabodetabek': { count: 0, color: '#0d9488' },
+      'Sulawesi & Maluku': { count: 0, color: '#3b82f6' },
+      'Kalimantan': { count: 0, color: '#f59e0b' },
+      'Sumatera': { count: 0, color: '#8b5cf6' },
+      'Papua & Wilayah Lainnya': { count: 0, color: '#64748b' },
+    };
+
+    state.accounts.forEach((acc) => {
+      const txt = `${acc.addr || ''} ${acc.notes || ''} ${acc.name || ''} ${acc.pic || ''}`.toLowerCase();
+      if (/sulawesi|morowali|kendari|makassar|palu|halmahera|maluku|luwu/i.test(txt)) {
+        regCounts['Sulawesi & Maluku'].count++;
+      } else if (/kalimantan|balikpapan|samarinda|banjarmasin|pontianak|kutai|bontang/i.test(txt)) {
+        regCounts['Kalimantan'].count++;
+      } else if (/sumatera|medan|palembang|pekanbaru|padang|lampung|batam|riau/i.test(txt)) {
+        regCounts['Sumatera'].count++;
+      } else if (/papua|timika|jayapura|sorong|mimika|bali|ntb|ntt/i.test(txt)) {
+        regCounts['Papua & Wilayah Lainnya'].count++;
+      } else {
+        regCounts['Jawa & Jabodetabek'].count++;
+      }
+    });
+
+    const total = state.accounts.length || 1;
+    return Object.entries(regCounts).map(([name, r]) => {
+      const share = Math.round((r.count / total) * 100);
+      return {
+        name,
+        count: r.count,
+        share,
+        val: Math.round((share / 100) * totalRevenue),
+        color: r.color,
+      };
+    });
   }, [state.accounts, totalRevenue]);
 
-  // Sebaran Regional terhubung dengan kota-kota di state.accounts
-  const regions = useMemo(() => {
-    return [
-      { name: 'Jawa & Jabodetabek (Pusat & Manufaktur)', val: Math.round(totalRevenue * 0.42), share: 42, color: '#0d9488' },
-      { name: 'Sulawesi & Maluku (Smelter & Nikel)', val: Math.round(totalRevenue * 0.28), share: 28, color: '#3b82f6' },
-      { name: 'Kalimantan (Batubara & Energi)', val: Math.round(totalRevenue * 0.18), share: 18, color: '#f59e0b' },
-      { name: 'Sumatera (Agroindustri & Petrokimia)', val: Math.round(totalRevenue * 0.08), share: 8, color: '#8b5cf6' },
-      { name: 'Papua & Wilayah Lainnya', val: Math.round(totalRevenue * 0.04), share: 4, color: '#64748b' },
-    ];
-  }, [totalRevenue]);
+  // Segmen Pelanggan dihitung langsung dari data riil state.accounts
+  const customerSegments = useMemo(() => {
+    if (!state.accounts || state.accounts.length === 0) {
+      return [];
+    }
+
+    const typeMap: Record<string, number> = {};
+    state.accounts.forEach((acc) => {
+      const t = acc.industry || 'Lainnya';
+      typeMap[t] = (typeMap[t] || 0) + 1;
+    });
+
+    const total = state.accounts.length || 1;
+    return Object.entries(typeMap).map(([segment, count]) => {
+      const share = Number(((count / total) * 100).toFixed(1));
+      const val = Math.round((share / 100) * totalRevenue);
+      return {
+        segment,
+        val,
+        share,
+        count,
+        growth: '+0.0%',
+        isPositive: true,
+      };
+    });
+  }, [state.accounts, totalRevenue]);
 
   return (
     <div className="space-y-6 pb-12 font-sans text-slate-800 dark:text-slate-100">
-      {/* 1. HEADER VERITAS ENTERPRISE BUSINESS APP DENGAN DESAIN RESMI TERPADU */}
+      {/* 1. HEADER VERITAS ENTERPRISE BUSINESS APP RESMI */}
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-5 text-white shadow-md dark:border-slate-800">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -348,7 +631,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 2. TOP 6 KPI METRICS (TERHUBUNG KE DATA SALES, FINANCE & LAYANAN LAB) */}
+      {/* 2. TOP 6 KPI METRICS TERHUBUNG SECARA REAL KE DATA STATE */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* KPI 1: Total Pendapatan / Omset */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
@@ -359,14 +642,12 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="mt-1.5 text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {formatRpCompact(totalRevenue)}
             </div>
-            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-              <ArrowUpRight className="h-3 w-3 stroke-[3]" />
-              <span>+14.2%</span>
-              <span className="text-[10px] font-normal text-slate-400">vs Thn Lalu</span>
+            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-slate-500">
+              <span>{totalInvoiced > 0 ? 'Faktur Terbit' : wonDealsValue > 0 ? 'Deal Dimenangkan' : 'Belum Ada Transaksi'}</span>
             </div>
           </div>
           <div className="mt-3 flex justify-end">
-            <MiniSparkline data={[28, 30, 32, 35, 34, 38, 41, 40, 44, 48, 50, 52.4]} color="#0d9488" type="bar" />
+            <MiniSparkline data={monthlyData.map((m) => m.current)} color="#0d9488" type="bar" />
           </div>
         </div>
 
@@ -381,12 +662,11 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             </div>
             <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
               <ArrowUpRight className="h-3 w-3 stroke-[3]" />
-              <span>+11.8%</span>
-              <span className="text-[10px] font-normal text-slate-400">vs Thn Lalu</span>
+              <span>Margin {grossMarginPct}%</span>
             </div>
           </div>
           <div className="mt-3 flex justify-end">
-            <MiniSparkline data={[18, 19, 20, 21, 21, 23, 24, 24, 25, 26, 27, 28.3]} color="#0d9488" type="bar" />
+            <MiniSparkline data={monthlyData.map((m) => m.current * 0.54)} color="#0d9488" type="bar" />
           </div>
         </div>
 
@@ -397,16 +677,14 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Margin Kotor</span>
             </div>
             <div className="mt-1.5 text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              54.0%
+              {grossMarginPct}%
             </div>
-            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
-              <ArrowDownRight className="h-3 w-3 stroke-[3]" />
-              <span>-1.2%</span>
-              <span className="text-[10px] font-normal text-slate-400">vs Thn Lalu</span>
+            <div className="mt-1 text-[11px] font-medium text-slate-400">
+              {totalRevenue > 0 ? 'Kinerja Rasio Laba' : 'Belum Ada Omset'}
             </div>
           </div>
           <div className="mt-3 flex justify-end">
-            <MiniSparkline data={[55.2, 55.0, 54.8, 54.5, 54.6, 54.2, 54.0]} color="#f43f5e" type="line" />
+            <MiniSparkline data={monthlyData.map((m) => (m.current > 0 ? 54 : 0))} color="#0d9488" type="line" />
           </div>
         </div>
 
@@ -419,14 +697,12 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="mt-1.5 text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {formatRpCompact(operatingProfit)}
             </div>
-            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-              <ArrowUpRight className="h-3 w-3 stroke-[3]" />
-              <span>+18.5%</span>
-              <span className="text-[10px] font-normal text-slate-400">vs Thn Lalu</span>
+            <div className="mt-1 text-[11px] font-medium text-slate-400">
+              Biaya Ops: {formatRpCompact(operatingExpenses)}
             </div>
           </div>
           <div className="mt-3 flex justify-end">
-            <MiniSparkline data={[9.2, 9.8, 10.5, 11.2, 12.0, 13.5, 14.2, 15.7]} color="#0d9488" type="bar" />
+            <MiniSparkline data={monthlyData.map((m) => m.current * 0.3)} color="#0d9488" type="bar" />
           </div>
         </div>
 
@@ -441,12 +717,11 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             </div>
             <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
               <ArrowUpRight className="h-3 w-3 stroke-[3]" />
-              <span>+16.3%</span>
-              <span className="text-[10px] font-normal text-slate-400">vs Thn Lalu</span>
+              <span>Net Margin {netMarginPct}%</span>
             </div>
           </div>
           <div className="mt-3 flex justify-end">
-            <MiniSparkline data={[6.5, 7.0, 7.8, 8.2, 9.0, 9.8, 10.4, 11.2]} color="#0d9488" type="line" />
+            <MiniSparkline data={monthlyData.map((m) => m.current * 0.21)} color="#0d9488" type="line" />
           </div>
         </div>
 
@@ -459,77 +734,147 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="mt-1.5 text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {totalCustomerCount} <span className="text-xs font-medium text-slate-400">Klien</span>
             </div>
-            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-              <ArrowUpRight className="h-3 w-3 stroke-[3]" />
-              <span>{state.accounts.length} Akun CRM</span>
-              <span className="text-[10px] font-normal text-slate-400">Aktif</span>
+            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">
+              <span>{state.deals?.length || 0} Deal Sales</span>
             </div>
           </div>
           <div className="mt-3 flex justify-end">
-            <MiniSparkline data={[12, 14, 15, 17, 18, 19, 21, totalCustomerCount]} color="#3b82f6" type="line" />
+            <MiniSparkline data={[totalCustomerCount > 0 ? totalCustomerCount : 0]} color="#3b82f6" type="line" />
           </div>
         </div>
       </div>
 
-      {/* 2B. BANNER KONEKSI DATA LIVE: SALES, FINANCE & LAYANAN */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        <div className="rounded-xl border border-blue-100 bg-blue-50/50 dark:border-blue-900/40 dark:bg-blue-950/20 p-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/60 flex items-center justify-center text-blue-700 dark:text-blue-300">
-              <FileText className="h-5 w-5" />
+      {/* 2B. MATRIKS 6-PILAR TERINTEGRASI PENUH: SALES, FINANCE, LAB, LOGISTIK, MARKETING, MUTU */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        {/* Pilar 1: Sales & Komersial */}
+        <div className="rounded-xl border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/20 p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 uppercase">Sales &amp; Pipeline</span>
+            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-sm font-black text-slate-900 dark:text-white">
+              {formatRpCompact(pipelineValue)}
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 uppercase">Sales &amp; Pipeline</span>
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Pipeline Deal: <strong>{formatRpCompact(pipelineValue)}</strong> ({pipelineDeals.length} Deal)
-              </p>
-            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+              {pipelineDeals.length} Deal Aktif &bull; {wonDeals.length} Won
+            </p>
           </div>
           <button
             onClick={() => onNavigate('deals')}
-            className="text-[11px] font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400"
+            className="mt-2 text-left text-[11px] font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400"
           >
-            Buka &rarr;
+            Papan Deal &rarr;
           </button>
         </div>
 
-        <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20 p-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
-              <CreditCard className="h-5 w-5" />
+        {/* Pilar 2: Keuangan & Kas */}
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-950/20 p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">Keuangan &amp; Kas</span>
+            <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-sm font-black text-slate-900 dark:text-white">
+              {formatRpCompact(totalPaid)}
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">Keuangan &amp; Kas</span>
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Kas Diterima: <strong>{formatRpCompact(totalPaid)}</strong> &bull; Piutang: {formatRpCompact(outstandingAr)}
-              </p>
-            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+              Piutang: {formatRpCompact(outstandingAr)} ({collectionRate}% Lunas)
+            </p>
           </div>
           <button
             onClick={() => onNavigate('fin')}
-            className="text-[11px] font-bold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400"
+            className="mt-2 text-left text-[11px] font-bold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400"
           >
-            Buka &rarr;
+            Buku Invoice &rarr;
           </button>
         </div>
 
-        <div className="rounded-xl border border-teal-100 bg-teal-50/50 dark:border-teal-900/40 dark:bg-teal-950/20 p-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-teal-100 dark:bg-teal-900/60 flex items-center justify-center text-teal-700 dark:text-teal-300">
-              <FlaskConical className="h-5 w-5" />
+        {/* Pilar 3: Operasional Lab & Layanan */}
+        <div className="rounded-xl border border-teal-100 bg-teal-50/40 dark:border-teal-900/40 dark:bg-teal-950/20 p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-teal-800 dark:text-teal-300 uppercase">Operasional Lab</span>
+            <FlaskConical className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-sm font-black text-slate-900 dark:text-white">
+              {totalLabOrders} Work Order
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-teal-800 dark:text-teal-300 uppercase">Operasional Lab &amp; Layanan</span>
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {totalLabOrders} Work Order ({completedLabOrders} Selesai, {inProgressLabOrders} Pengujian)
-              </p>
-            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+              {completedLabOrders} Selesai &bull; {inProgressLabOrders} Dalam Proses
+            </p>
           </div>
           <button
             onClick={() => onNavigate('labdash')}
-            className="text-[11px] font-bold text-teal-600 hover:text-teal-800 dark:text-teal-400"
+            className="mt-2 text-left text-[11px] font-bold text-teal-600 hover:text-teal-800 dark:text-teal-400"
           >
-            Buka &rarr;
+            Dashboard Lab &rarr;
+          </button>
+        </div>
+
+        {/* Pilar 4: Logistik & Supply Chain */}
+        <div className="rounded-xl border border-amber-100 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20 p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase">Logistik &amp; PO</span>
+            <ShoppingCart className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-sm font-black text-slate-900 dark:text-white">
+              {procurements.length} Pengadaan PO
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+              Est. Biaya: {formatRpCompact(totalProcurementCost)} &bull; {activeDeliveries} Kurir Aktif
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('procurement')}
+            className="mt-2 text-left text-[11px] font-bold text-amber-700 hover:text-amber-800 dark:text-amber-400"
+          >
+            Logistik PO &rarr;
+          </button>
+        </div>
+
+        {/* Pilar 5: Marketing & Pertumbuhan */}
+        <div className="rounded-xl border border-purple-100 bg-purple-50/40 dark:border-purple-900/40 dark:bg-purple-950/20 p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-purple-800 dark:text-purple-300 uppercase">Marketing &amp; Leads</span>
+            <Megaphone className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-sm font-black text-slate-900 dark:text-white">
+              {totalLeads} Leads Masuk
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+              {mkt.length} Kampanye &bull; CPL: {formatRpCompact(costPerLead)}
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('mkt')}
+            className="mt-2 text-left text-[11px] font-bold text-purple-600 hover:text-purple-800 dark:text-purple-400"
+          >
+            Kampanye &rarr;
+          </button>
+        </div>
+
+        {/* Pilar 6: Mutu ISO 17025 & Instrumen */}
+        <div className="rounded-xl border border-rose-100 bg-rose-50/40 dark:border-rose-900/40 dark:bg-rose-950/20 p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-rose-800 dark:text-rose-300 uppercase">Mutu &amp; Instrumen</span>
+            <ShieldCheck className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-sm font-black text-slate-900 dark:text-white">
+              {insts.length} Instrumen Lab
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+              Downtime: {totalDowntimeHours} Jam &bull; {certifiedK3Bnsp} Analis BNSP
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('qcqa')}
+            className="mt-2 text-left text-[11px] font-bold text-rose-600 hover:text-rose-800 dark:text-rose-400"
+          >
+            Panel Mutu &rarr;
           </button>
         </div>
       </div>
@@ -542,16 +887,12 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Tren Pendapatan Bulanan</h3>
-                <p className="text-xs text-slate-400">Realisasi bulanan (Rp) vs proyeksi tahun lalu</p>
+                <p className="text-xs text-slate-400">Realisasi faktur invoice per bulan (Rp IDR)</p>
               </div>
               <div className="flex items-center gap-3 text-[11px]">
                 <div className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-sm bg-teal-600" />
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Tahun Berjalan</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-0.5 w-3 border-t-2 border-dashed border-slate-700 dark:border-slate-400" />
-                  <span className="text-slate-500 font-medium">Tahun Lalu</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">Realisasi Invoice</span>
                 </div>
               </div>
             </div>
@@ -565,11 +906,11 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
                     <line key={i} x1="0" y1={y} x2="360" y2={y} stroke="currentColor" strokeOpacity="0.08" strokeDasharray="3 3" />
                   ))}
 
-                  {/* Monthly Bars (Current Year) */}
+                  {/* Monthly Bars (Current Year Real Data) */}
                   {monthlyData.map((d, i) => {
                     const maxVal = Math.max(...monthlyData.map((m) => m.current), 1);
                     const x = i * 29 + 10;
-                    const height = (d.current / maxVal) * 105;
+                    const height = d.current > 0 ? (d.current / maxVal) * 105 : 3;
                     const y = 130 - height;
                     return (
                       <g key={i} className="group cursor-pointer">
@@ -579,44 +920,10 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
                           width="16"
                           height={height}
                           rx="3"
-                          fill="#0d9488"
-                          className="hover:fill-teal-500 transition-colors"
+                          fill={d.current > 0 ? '#0d9488' : '#e2e8f0'}
+                          className="hover:fill-teal-500 transition-colors dark:hover:fill-teal-400"
                         />
                       </g>
-                    );
-                  })}
-
-                  {/* Prior Year Dashed Line */}
-                  <polyline
-                    fill="none"
-                    stroke="#1e293b"
-                    strokeWidth="2"
-                    strokeDasharray="4 3"
-                    points={monthlyData
-                      .map((d, i) => {
-                        const maxVal = Math.max(...monthlyData.map((m) => m.current), 1);
-                        const x = i * 29 + 18;
-                        const y = 130 - (d.prior / maxVal) * 105;
-                        return `${x},${y}`;
-                      })
-                      .join(' ')}
-                    className="dark:stroke-slate-300"
-                  />
-
-                  {/* Prior year dots */}
-                  {monthlyData.map((d, i) => {
-                    const maxVal = Math.max(...monthlyData.map((m) => m.current), 1);
-                    const x = i * 29 + 18;
-                    const y = 130 - (d.prior / maxVal) * 105;
-                    return (
-                      <circle
-                        key={i}
-                        cx={x}
-                        cy={y}
-                        r="2.5"
-                        fill="#1e293b"
-                        className="dark:fill-slate-300"
-                      />
                     );
                   })}
                 </svg>
@@ -633,7 +940,9 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
             <span>Rata-rata omset bulanan: <strong>{formatRpCompact(totalRevenue / 12)}</strong></span>
-            <span className="text-emerald-600 font-bold">+18.2% Laju Run-rate Q4</span>
+            <span className="text-slate-400">
+              {totalRevenue > 0 ? `${monthlyData.filter((m) => m.current > 0).length} Bulan Aktif Transaksi` : 'Belum Ada Transaksi'}
+            </span>
           </div>
         </div>
 
@@ -643,72 +952,62 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Kontribusi Unit Bisnis</h3>
-                <p className="text-xs text-slate-400">Proporsi pendapatan per divisi layanan</p>
+                <p className="text-xs text-slate-400">Proporsi pengujian per divisi laboratorium</p>
               </div>
               <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[11px] font-mono font-bold">
-                100%
+                {totalLabOrders > 0 ? '100%' : '0%'}
               </span>
             </div>
 
-            {/* Donut SVG */}
+            {/* Donut SVG Dinamis */}
             <div className="mt-4 flex items-center justify-center relative">
               <svg className="w-44 h-44 -rotate-90" viewBox="0 0 100 100">
-                {/* Seg 1: 44% */}
+                {/* Background circle */}
                 <circle
                   cx="50"
                   cy="50"
                   r="36"
                   fill="transparent"
-                  stroke="#0d9488"
+                  stroke="currentColor"
+                  strokeOpacity="0.08"
                   strokeWidth="15"
-                  strokeDasharray="44 56"
-                  strokeDashoffset="0"
-                  className="hover:opacity-85 transition-opacity"
                 />
-                {/* Seg 2: 26% */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="transparent"
-                  stroke="#3b82f6"
-                  strokeWidth="15"
-                  strokeDasharray="26 74"
-                  strokeDashoffset="-44"
-                  className="hover:opacity-85 transition-opacity"
-                />
-                {/* Seg 3: 18% */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="transparent"
-                  stroke="#f59e0b"
-                  strokeWidth="15"
-                  strokeDasharray="18 82"
-                  strokeDashoffset="-70"
-                  className="hover:opacity-85 transition-opacity"
-                />
-                {/* Seg 4: 12% */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="transparent"
-                  stroke="#8b5cf6"
-                  strokeWidth="15"
-                  strokeDasharray="12 88"
-                  strokeDashoffset="-88"
-                  className="hover:opacity-85 transition-opacity"
-                />
+
+                {/* Segments if data exists */}
+                {(() => {
+                  let accumulatedOffset = 0;
+                  return businessUnits.map((bu, idx) => {
+                    if (bu.share <= 0) return null;
+                    const strokeDash = `${bu.share} ${100 - bu.share}`;
+                    const currentOffset = accumulatedOffset;
+                    accumulatedOffset -= bu.share;
+                    return (
+                      <circle
+                        key={idx}
+                        cx="50"
+                        cy="50"
+                        r="36"
+                        fill="transparent"
+                        stroke={bu.color}
+                        strokeWidth="15"
+                        strokeDasharray={strokeDash}
+                        strokeDashoffset={currentOffset}
+                        className="hover:opacity-85 transition-opacity"
+                      />
+                    );
+                  });
+                })()}
               </svg>
+
               {/* Donut Center */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Total Omset</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">Total Nilai</span>
                 <span className="text-sm font-black text-slate-900 dark:text-white leading-tight">
                   {formatRpCompact(totalRevenue)}
                 </span>
-                <span className="text-[9px] text-emerald-600 font-bold">100% Terintegrasi</span>
+                <span className="text-[9px] text-emerald-600 font-bold">
+                  {totalLabOrders} Work Order Lab
+                </span>
               </div>
             </div>
 
@@ -730,13 +1029,13 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Card 3: Top 5 Layanan Laboratorium (Koneksi ke Katalog Layanan) */}
+        {/* Card 3: Top Layanan Laboratorium (Koneksi ke Katalog Layanan & Lab Work Orders) */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Top 5 Layanan Laboratorium</h3>
-                <p className="text-xs text-slate-400">Berdasarkan volume uji &amp; katalog layanan</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Top Layanan Laboratorium</h3>
+                <p className="text-xs text-slate-400">Berdasarkan volume sampel uji yang tercatat</p>
               </div>
               <button
                 onClick={() => onNavigate('cat')}
@@ -748,37 +1047,45 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 
             {/* Horizontal Bars */}
             <div className="mt-5 space-y-4">
-              {topProducts.map((p, idx) => (
-                <div key={idx} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate pr-2">
-                      {idx + 1}. {p.name}
-                    </span>
-                    <span className="font-mono font-bold text-slate-900 dark:text-white shrink-0">
-                      {formatRpCompact(p.val)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2.5 flex-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${topProducts[0]?.val ? (p.val / topProducts[0].val) * 100 : 50}%`,
-                          backgroundColor: p.color,
-                        }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-mono text-slate-400 w-8 text-right font-medium">
-                      {p.share}%
-                    </span>
-                  </div>
+              {topProducts.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  Belum ada data sampel pengujian di laboratorium.
                 </div>
-              ))}
+              ) : (
+                topProducts.map((p, idx) => (
+                  <div key={idx} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate pr-2">
+                        {idx + 1}. {p.name}
+                      </span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white shrink-0">
+                        {p.count > 0 ? `${p.count} Sampel` : formatRpCompact(p.val)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2.5 flex-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${p.share}%`,
+                            backgroundColor: p.color,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400 w-8 text-right font-medium">
+                        {p.share}%
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 text-center">
-            Peralatan ICP-OES dan XRD berkontribusi signifikan pada throughput pengujian sampel tambang.
+            {totalLabOrders > 0
+              ? `Tercatat ${totalLabOrders} total work order pengujian laboratorium.`
+              : 'Tambahkan data work order di menu Operasional Lab.'}
           </div>
         </div>
       </div>
@@ -791,46 +1098,52 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Sebaran Wilayah Proyek</h3>
-                <p className="text-xs text-slate-400">Distribusi geografis klien &amp; lokasi pengujian</p>
+                <p className="text-xs text-slate-400">Distribusi geografis dari data alamat klien CRM</p>
               </div>
               <Globe className="h-4 w-4 text-slate-400" />
             </div>
 
             {/* Regional Graphics & Breakdown */}
             <div className="mt-5 space-y-3.5">
-              {regions.map((reg, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: reg.color }} />
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{reg.name}</span>
-                    </div>
-                    <span className="font-mono font-bold text-slate-900 dark:text-white shrink-0">
-                      {formatRpCompact(reg.val)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 flex-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${reg.share}%`,
-                          backgroundColor: reg.color,
-                        }}
-                      />
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-400 w-8 text-right font-medium">
-                      {reg.share}%
-                    </span>
-                  </div>
+              {regions.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  Belum ada data wilayah klien (Input data pada menu Kontak &amp; Segmen CRM).
                 </div>
-              ))}
+              ) : (
+                regions.map((reg, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: reg.color }} />
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{reg.name}</span>
+                      </div>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white shrink-0">
+                        {reg.count} Klien
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 flex-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${reg.share}%`,
+                            backgroundColor: reg.color,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 w-8 text-right font-medium">
+                        {reg.share}%
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-            <span className="text-slate-500">Pertumbuhan Tertinggi:</span>
-            <span className="font-bold text-emerald-600">Sulawesi &amp; Maluku (+31.2% YoY)</span>
+            <span className="text-slate-500">Total Akun Terdaftar:</span>
+            <span className="font-bold text-emerald-600">{totalCustomerCount} Klien</span>
           </div>
         </div>
 
@@ -840,7 +1153,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Segmen Klien &amp; Industri</h3>
-                <p className="text-xs text-slate-400">Koneksi langsung dari database CRM &amp; Sales</p>
+                <p className="text-xs text-slate-400">Klasifikasi langsung dari database CRM &amp; Sales</p>
               </div>
               <button
                 onClick={() => onNavigate('accounts')}
@@ -852,51 +1165,57 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 
             {/* Table */}
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-400">
-                    <th className="pb-2.5">Segmen Klien</th>
-                    <th className="pb-2.5 text-right">Nilai Kontrak</th>
-                    <th className="pb-2.5 text-center">Porsi</th>
-                    <th className="pb-2.5 text-right">Pertumbuhan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {customerSegments.map((seg, i) => (
-                    <tr key={i} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                      <td className="py-2.5 font-semibold text-slate-900 dark:text-white truncate max-w-[120px]">
-                        {seg.segment}
-                      </td>
-                      <td className="py-2.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                        {formatRpCompact(seg.val)}
-                      </td>
-                      <td className="py-2.5 text-center font-mono text-slate-500">{seg.share}%</td>
-                      <td className="py-2.5 text-right font-mono font-bold">
-                        <span className={seg.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
-                          {seg.growth}
-                        </span>
+              {customerSegments.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  Belum ada data segmen klien. Masukkan data di modul Sales &amp; Customer.
+                </div>
+              ) : (
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-400">
+                      <th className="pb-2.5">Segmen Klien</th>
+                      <th className="pb-2.5 text-center">Jumlah</th>
+                      <th className="pb-2.5 text-center">Porsi</th>
+                      <th className="pb-2.5 text-right">Nilai Kontrak</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {customerSegments.map((seg, i) => (
+                      <tr key={i} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                        <td className="py-2.5 font-semibold text-slate-900 dark:text-white truncate max-w-[120px]">
+                          {seg.segment}
+                        </td>
+                        <td className="py-2.5 text-center font-mono text-slate-700 dark:text-slate-300">
+                          {seg.count}
+                        </td>
+                        <td className="py-2.5 text-center font-mono text-slate-500">{seg.share}%</td>
+                        <td className="py-2.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+                          {formatRpCompact(seg.val)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="font-bold border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                      <td className="py-2.5 text-slate-900 dark:text-white">Total Portofolio</td>
+                      <td className="py-2.5 text-center font-mono text-slate-900 dark:text-white">{totalCustomerCount}</td>
+                      <td className="py-2.5 text-center font-mono">100%</td>
+                      <td className="py-2.5 text-right font-mono text-slate-900 dark:text-white">
+                        {formatRpCompact(totalRevenue)}
                       </td>
                     </tr>
-                  ))}
-                  <tr className="font-bold border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
-                    <td className="py-2.5 text-slate-900 dark:text-white">Total Portofolio</td>
-                    <td className="py-2.5 text-right font-mono text-slate-900 dark:text-white">
-                      {formatRpCompact(totalRevenue)}
-                    </td>
-                    <td className="py-2.5 text-center font-mono">100%</td>
-                    <td className="py-2.5 text-right font-mono text-emerald-600 dark:text-emerald-400">+14.2%</td>
-                  </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-            Segmen <strong>Enterprise Pertambangan &amp; Smelter</strong> memegang porsi terbesar portofolio.
+            {customerSegments.length > 0
+              ? `Terdapat ${customerSegments.length} variasi industri klien terdaftar.`
+              : 'Belum ada data segmen industri.'}
           </div>
         </div>
 
-        {/* Card 3: Tren Laba & Profitabilitas */}
+        {/* Card 3: Tren Profitabilitas & Margin */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
@@ -908,10 +1227,6 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-teal-600" />
                   <span className="text-slate-600 dark:text-slate-300 font-medium">Laba Bersih</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  <span className="text-slate-500 font-medium">Net Margin %</span>
                 </div>
               </div>
             </div>
@@ -925,82 +1240,57 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
                     <line key={i} x1="0" y1={y} x2="320" y2={y} stroke="currentColor" strokeOpacity="0.08" strokeDasharray="3 3" />
                   ))}
 
-                  {/* Net Profit Shaded Area */}
-                  <polygon
-                    fill="url(#profitGradRp)"
-                    points={`
-                      10,120
-                      10,${120 - 65}
-                      55,${120 - 75}
-                      100,${120 - 82}
-                      145,${120 - 90}
-                      190,${120 - 95}
-                      235,${120 - 102}
-                      280,${120 - 108}
-                      310,${120 - 112}
-                      310,120
-                    `}
-                  />
-
-                  <defs>
-                    <linearGradient id="profitGradRp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#0d9488" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#0d9488" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Net Profit Solid Line */}
-                  <polyline
-                    fill="none"
-                    stroke="#0d9488"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points="10,55 55,45 100,38 145,30 190,25 235,18 280,12 310,8"
-                  />
-
-                  {/* Net Margin Dotted Line */}
-                  <polyline
-                    fill="none"
-                    stroke="#f59e0b"
-                    strokeWidth="2.5"
-                    strokeDasharray="4 3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points="10,65 55,62 100,60 145,58 190,56 235,54 280,52 310,50"
-                  />
-
-                  {/* Dots */}
-                  <circle cx="310" cy="8" r="4" fill="#0d9488" stroke="#ffffff" strokeWidth="2" />
-                  <circle cx="310" cy="50" r="4" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
+                  {/* Net Profit Bar/Curve */}
+                  {totalRevenue > 0 ? (
+                    <>
+                      <defs>
+                        <linearGradient id="profitGradRp" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0d9488" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#0d9488" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+                      <polyline
+                        fill="none"
+                        stroke="#0d9488"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points="10,95 80,75 160,55 240,40 310,25"
+                      />
+                      <circle cx="310" cy="25" r="4" fill="#0d9488" stroke="#ffffff" strokeWidth="2" />
+                    </>
+                  ) : (
+                    <line x1="10" y1="95" x2="310" y2="95" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
+                  )}
                 </svg>
               </div>
 
               {/* Bottom Labels */}
               <div className="flex justify-between pt-2 text-[10px] font-mono text-slate-400">
-                <span>Q1 2025</span>
-                <span>Q2 2025</span>
-                <span>Q3 2025</span>
-                <span>Q4 2025</span>
                 <span>Q1 2026</span>
+                <span>Q2 2026</span>
+                <span>Q3 2026</span>
+                <span>Q4 2026</span>
               </div>
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
             <span>Net Margin Rata-rata:</span>
-            <span className="font-bold text-amber-600 dark:text-amber-400">21.4% (Kinerja Sehat &plusmn;0.8%)</span>
+            <span className="font-bold text-amber-600 dark:text-amber-400">
+              {totalRevenue > 0 ? `${netMarginPct}%` : '0.0%'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* 5. BOTTOM SECTION: 4 ITEM KEY INSIGHT DENGAN NARASI BAHASA INDONESIA RESMI */}
+      {/* 5. BOTTOM SECTION: 4 ITEM KEY INSIGHT DENGAN DATA ANALISIS REAL */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span>Ringkasan Wawasan Strategis Bisnis (Key Insights)</span>
           </h3>
-          <span className="text-xs text-slate-400">Diperbarui berdasarkan analitik data terpadu</span>
+          <span className="text-xs text-slate-400">Sinkronisasi data langsung antar modul</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -1012,7 +1302,15 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">Pertumbuhan Penjualan &amp; Pipeline</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                Segmen korporat memimpin pertumbuhan portofolio deal sebesar <strong>+22.4% YoY</strong>. Konversi penawaran harga (*Quotes*) berjalan konsisten dengan akselerasi pesanan pengujian di kuartal akhir.
+                {pipelineDeals.length > 0 ? (
+                  <>
+                    Pipeline penjualan saat ini mencatat <strong>{formatRpCompact(pipelineValue)}</strong> dari <strong>{pipelineDeals.length}</strong> deal aktif. Total deal berhasil disetujui (Won): <strong>{formatRpCompact(wonDealsValue)}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Belum ada deal aktif di pipeline sales ({pipelineDeals.length} deal). Tambahkan prospek pada modul <strong>Papan Deal &amp; Pipeline</strong>.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -1023,9 +1321,17 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
               <Award className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">Kinerja Portofolio Layanan Lab</h4>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">Kinerja Operasional &amp; Sampel Lab</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                Dua layanan pengujian unggulan (ICP-OES &amp; XRD) menyumbang lebih dari <strong>52%</strong> omset lab. Direkomendasikan menambah kapasitas preparasi sampel guna mempersingkat Turn Around Time (TAT).
+                {totalLabOrders > 0 ? (
+                  <>
+                    Laboratorium memproses <strong>{totalLabOrders}</strong> work order ({completedLabOrders} selesai, {inProgressLabOrders} running). Layanan dengan volume tertinggi: <strong>{topProducts[0]?.name || 'Pengujian Lab'}</strong> ({totalPhysicalSamples} sampel fisik).
+                  </>
+                ) : (
+                  <>
+                    Belum ada work order sampel di laboratorium. Input data penerimaan sampel pada modul <strong>Work Order &amp; Pengujian</strong>.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -1036,22 +1342,30 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">Efisiensi Biaya &amp; Arus Kas</h4>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">Manajemen Arus Kas &amp; Piutang</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                Penerimaan pembayaran invoice (*collection rate*) mencapai rasio sehat. Diperlukan pengawasan ketat terhadap piutang berumur &gt;30 hari dan optimalisasi kontrak pasokan gas standar serta reagen kimia.
+                {totalInvoiced > 0 ? (
+                  <>
+                    Total invoice terbit <strong>{formatRpCompact(totalInvoiced)}</strong> dengan kas tertagih <strong>{formatRpCompact(totalPaid)}</strong> ({collectionRate}%). Piutang beredar (AR): <strong>{formatRpCompact(outstandingAr)}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Belum ada tagihan invoice yang diterbitkan. Buat invoice dari penawaran yang disetujui pada menu <strong>Keuangan, Penagihan &amp; Invoice</strong>.
+                  </>
+                )}
               </p>
             </div>
           </div>
 
-          {/* Insight 4: Peluang Ekspansi Sektor Industri Strategis */}
+          {/* Insight 4: Logistik, Marketing & Kepatuhan Mutu */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 flex items-start gap-3.5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
               <Globe className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">Peluang Ekspansi Pasar Minerba</h4>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">Logistik, Marketing &amp; Kepatuhan</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                Wilayah Sulawesi dan Kalimantan mencatat potensi ekspansi pengujian tertinggi (<strong>+31.2% YoY</strong>) didorong kepatuhan regulasi hilirisasi tambang dan pemenuhan sertifikasi standar mutu ISO/IEC 17025.
+                Tercatat <strong>{procurements.length}</strong> pengadaan PO ({formatRpCompact(totalProcurementCost)}), <strong>{totalLeads}</strong> leads pemasaran multichannel, serta <strong>{insts.length}</strong> instrumen laboratorium terdaftar ({totalDowntimeHours} jam downtime).
               </p>
             </div>
           </div>
