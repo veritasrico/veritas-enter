@@ -89,11 +89,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badge: 'AI',
           badgeColor: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
         },
-        {
-          key: 'cal',
-          label: 'Kalender Terpadu & Jadwal',
-          icon: <Calendar className="h-4 w-4" />,
-        },
       ],
     },
     {
@@ -277,6 +272,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }))
     .filter((section) => section.items.length > 0);
 
+  const isCalAllowed =
+    userRole === 'admin' ||
+    !allowedTabs ||
+    allowedTabs.length === 0 ||
+    allowedTabs.includes('cal');
+
   // Initialize expanded state: active category expanded by default
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>(() => {
     const initial: Record<number, boolean> = { 1: true, 2: true };
@@ -332,6 +333,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Standalone Quick Access: Kalender Terpadu & Jadwal (Di antara Head Veritas & 8 Menu Utama) */}
+      {isCalAllowed && (
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={() => onSelectTab('cal')}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all shadow-xs ${
+              currentTab === 'cal'
+                ? 'border-emerald-500 bg-emerald-600 text-white shadow-emerald-600/30 ring-1 ring-emerald-500'
+                : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/20 hover:border-emerald-500 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40'
+            }`}
+          >
+            <Calendar className={`h-4 w-4 shrink-0 ${currentTab === 'cal' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
+            <span className="truncate">Kalender Terpadu &amp; Jadwal</span>
+          </button>
+        </div>
+      )}
 
       {/* Accordion / Collapse Controls */}
       <div className="mb-2 flex items-center justify-between px-1 text-[10px] text-slate-400 dark:text-slate-500">

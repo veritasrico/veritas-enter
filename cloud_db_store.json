@@ -1,0 +1,174 @@
+{
+  "data": {
+    "accounts": [],
+    "deals": [],
+    "acts": [],
+    "mkt": [],
+    "quotes": [],
+    "labs": [],
+    "instr": [],
+    "insts": [
+      {
+        "id": "inst-1",
+        "name": "SEM",
+        "brand": "JEOL JSM-IT200",
+        "pic": "Analis SEM",
+        "target": 20,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "Scanning Electron Microscope & EDS"
+      },
+      {
+        "id": "inst-2",
+        "name": "XRD",
+        "brand": "BRUKER D8 Advance",
+        "pic": "Analis XRD",
+        "target": 20,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "X-Ray Diffraction"
+      },
+      {
+        "id": "inst-3",
+        "name": "ICP-OES",
+        "brand": "Thermo Scientific iCAP PRO",
+        "pic": "Analis Kimia",
+        "target": 15,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "Inductively Coupled Plasma Optical Emission"
+      },
+      {
+        "id": "inst-4",
+        "name": "FTIR",
+        "brand": "Shimadzu IRTracer-100",
+        "pic": "Analis Spektroskopi",
+        "target": 15,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "Fourier Transform Infrared"
+      },
+      {
+        "id": "inst-5",
+        "name": "HPLC",
+        "brand": "Agilent 1260 Infinity II",
+        "pic": "Analis Kromatografi",
+        "target": 10,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "High Performance Liquid Chromatography"
+      },
+      {
+        "id": "inst-6",
+        "name": "GC-MS",
+        "brand": "Thermo TRACE 1310 / ISQ",
+        "pic": "Analis GC-MS",
+        "target": 8,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "Gas Chromatography - Mass Spectrometry"
+      },
+      {
+        "id": "inst-7",
+        "name": "XRF",
+        "brand": "BRUKER S2 PUMA",
+        "pic": "Analis XRF",
+        "target": 15,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "X-Ray Fluorescence"
+      },
+      {
+        "id": "inst-8",
+        "name": "UV-Vis",
+        "brand": "HORIBA Duetta",
+        "pic": "Analis Spektroskopi",
+        "target": 12,
+        "ops": 8,
+        "int": 365,
+        "last": "",
+        "pmInt": 180,
+        "pmLast": "",
+        "note": "UV-Vis Spectrophotometer"
+      }
+    ],
+    "inv": [],
+    "fins": [],
+    "cat": [],
+    "log": [
+      {
+        "id": "log-sys-clean",
+        "ts": 1792751947172,
+        "user": "admin",
+        "role": "admin",
+        "action": "Tambah",
+        "mod": "Sistem",
+        "ref": "Sistem Bersih",
+        "note": "Seluruh data dummy telah dikosongkan. Sistem siap digunakan untuk data operasional riil PT NUSA VERITAS INSPEKTAMA."
+      }
+    ],
+    "settings": {
+      "co": {
+        "name": "PT NUSA VERITAS INSPEKTAMA",
+        "addr": "Head Office:\nBusiness Park Kebun Jeruk Blok F2 No. 10. Jl. Meruya Ilir, Meruya Utara, Kembangan, Jakarta Barat, Jakarta 11620\n\nLaboratory:\nKawasan Sains & Teknologi B.J. Habibie, Gedung 442, Setu, South Tangerang City, Banten 15314",
+        "phone": "+62 21 293 257 39",
+        "email": "layanan@veritaslab.co.id",
+        "bank": "Bank Mandiri KCP Jakarta\nNo. Rek: 133-00-987654-1\na.n. PT NUSA VERITAS INSPEKTAMA",
+        "terms": "1. Pembayaran tempo 30 hari kalender setelah invoice diterima.\n2. Laporan hasil uji (Certificate of Analysis) diterbitkan setelah pelunasan invoice.\n3. Sampel sisa uji disimpan maksimal 14 hari kerja sebelum dimusnahkan.",
+        "ppn": 11,
+        "signer": "Ricoh Sutrisno",
+        "title": "Laboratory Manager acting as General Manager",
+        "logo": "/assets/aistudio/Abstract_Blue_Molecular_Network_fe9a48c2.png",
+        "tpl": "modern",
+        "accent": "#0f6e56",
+        "intro": "Bersama surat ini kami sampaikan rincian penawaran harga pengujian laboratorium terakreditasi untuk kebutuhan perusahaan/institusi Anda:",
+        "outro": "Besar harapan kami dapat mendukung keandalan riset serta standar industri Anda. Untuk koordinasi pengiriman sampel dan teknis pengujian, silakan hubungi tim kami.",
+        "invIntro": "Bersama ini kami sampaikan tagihan resmi atas jasa analisa laboratorium yang telah diselesaikan dengan rincian berikut:",
+        "invTerms": "Pembayaran wajib mencantumkan Nomor Invoice pada berita transfer. Bukti transfer dikirimkan via WhatsApp layanan kami.",
+        "invOutro": "Terima kasih atas kepercayaan Anda bermitra dengan PT NUSA VERITAS INSPEKTAMA."
+      },
+      "int": {
+        "wa": {
+          "on": true,
+          "ref": "628119811562",
+          "note": "Gateway WhatsApp Business Layanan PT NUSA VERITAS INSPEKTAMA (+62 811 9811 562)"
+        },
+        "gcal": {
+          "on": true,
+          "ref": "calendar@veritaslab.co.id",
+          "note": "Sinkronisasi jadwal follow-up"
+        },
+        "api": {
+          "on": true,
+          "ref": "/api/reports/monthly",
+          "note": "Endpoint integrasi laporan bulanan aktif"
+        }
+      },
+      "waNumber": "628119811562",
+      "autoReminders": true,
+      "cloudSyncIntervalSec": 30
+    }
+  },
+  "syncedAt": "2026-10-27T07:26:25.967Z"
+}
