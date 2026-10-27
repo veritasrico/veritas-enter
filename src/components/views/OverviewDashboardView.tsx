@@ -10,6 +10,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Check,
   Building2,
   DollarSign,
@@ -29,33 +31,90 @@ import { idr } from '../../utils/seedData';
 import { TabKey } from '../Sidebar';
 import { VeritasLogo } from '../VeritasLogo';
 
+export type DashboardPeriodMode = 'YTD' | 'MTD' | 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'ALL';
+
 interface OverviewDashboardViewProps {
   state: AppState;
+  selectedYear?: number;
+  onYearChange?: (year: number) => void;
   onNavigate: (tab: TabKey) => void;
-  onOpenWa: (acc: any, templateId?: string) => void;
+  onOpenWa?: (acc: any, templateId?: string) => void;
   onOpenSlide: () => void;
 }
 
 export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
   state,
+  selectedYear: propSelectedYear,
+  onYearChange: propOnYearChange,
   onNavigate,
   onOpenSlide,
 }) => {
-  const [dateRange, setDateRange] = useState<string>('Tahun Berjalan (YTD 2026)');
+  // Tahun terpilih tersinkronisasi penuh dengan Kalender Terpadu
+  const [internalYear, setInternalYear] = useState<number>(2026);
+  const selectedYear = propSelectedYear !== undefined ? propSelectedYear : internalYear;
+  const onYearChange = (y: number) => {
+    if (propOnYearChange) propOnYearChange(y);
+    setInternalYear(y);
+  };
+
+  // Pilihan Periode: YTD, MTD, Quarter (Q1-Q4), Kumulatif (ALL)
+  const [periodMode, setPeriodMode] = useState<DashboardPeriodMode>('YTD');
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
 
-  // Helper filter tanggal
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+  const currentMonthIdx = new Date().getMonth();
+  const currentMonthName = monthNames[currentMonthIdx];
+
+  const getPeriodLabel = () => {
+    switch (periodMode) {
+      case 'YTD':
+        return `Tahun Berjalan (YTD ${selectedYear})`;
+      case 'MTD':
+        return `Bulan Ini (MTD ${currentMonthName} ${selectedYear})`;
+      case 'Q1':
+        return `Kuartal 1 (Q1 ${selectedYear}: Jan - Mar)`;
+      case 'Q2':
+        return `Kuartal 2 (Q2 ${selectedYear}: Apr - Jun)`;
+      case 'Q3':
+        return `Kuartal 3 (Q3 ${selectedYear}: Jul - Sep)`;
+      case 'Q4':
+        return `Kuartal 4 (Q4 ${selectedYear}: Okt - Des)`;
+      case 'ALL':
+        return 'Semua Periode (Historis Kumulatif)';
+      default:
+        return `Tahun Berjalan (YTD ${selectedYear})`;
+    }
+  };
+
+  // Helper filter tanggal presisi menyesuaikan tahun dan mode periode terpilih
   const matchesDateFilter = (dateStr?: string) => {
-    if (!dateStr) return true;
-    if (dateRange === 'Semua Periode (Historis Kumulatif)') return true;
-    if (dateRange === 'Tahun Berjalan (YTD 2026)') return dateStr.startsWith('2026');
-    if (dateRange === 'Bulan Ini (Oktober 2026)') return dateStr.startsWith('2026-10');
-    if (dateRange === 'Kuartal 3 (Q3 2026)') {
-      return (
-        dateStr.startsWith('2026-07') ||
-        dateStr.startsWith('2026-08') ||
-        dateStr.startsWith('2026-09')
-      );
+    if (!dateStr) return periodMode === 'ALL';
+    if (periodMode === 'ALL') return true;
+
+    const yr = String(selectedYear);
+    if (!dateStr.startsWith(yr)) return false;
+
+    if (periodMode === 'YTD') {
+      return true; // Seluruh data di tahun terpilih
+    }
+    if (periodMode === 'MTD') {
+      const currentMonthNum = String(currentMonthIdx + 1).padStart(2, '0');
+      return dateStr.startsWith(`${yr}-${currentMonthNum}`);
+    }
+    if (periodMode === 'Q1') {
+      return dateStr.startsWith(`${yr}-01`) || dateStr.startsWith(`${yr}-02`) || dateStr.startsWith(`${yr}-03`);
+    }
+    if (periodMode === 'Q2') {
+      return dateStr.startsWith(`${yr}-04`) || dateStr.startsWith(`${yr}-05`) || dateStr.startsWith(`${yr}-06`);
+    }
+    if (periodMode === 'Q3') {
+      return dateStr.startsWith(`${yr}-07`) || dateStr.startsWith(`${yr}-08`) || dateStr.startsWith(`${yr}-09`);
+    }
+    if (periodMode === 'Q4') {
+      return dateStr.startsWith(`${yr}-10`) || dateStr.startsWith(`${yr}-11`) || dateStr.startsWith(`${yr}-12`);
     }
     return true;
   };
@@ -63,7 +122,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
   // 1. DATA REAL SALES & CUSTOMER CRM
   const filteredDeals = useMemo(() => {
     return (state.deals || []).filter((d) => matchesDateFilter(d.close));
-  }, [state.deals, dateRange]);
+  }, [state.deals, selectedYear, periodMode]);
 
   const wonDeals = useMemo(() => filteredDeals.filter((d) => d.stage === 'Won'), [filteredDeals]);
   const wonDealsValue = useMemo(
@@ -82,12 +141,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 
   const filteredQuotes = useMemo(() => {
     return (state.quotes || []).filter((q) => matchesDateFilter(q.date));
-  }, [state.quotes, dateRange]);
-
-  const totalQuotesValue = useMemo(
-    () => filteredQuotes.reduce((sum, q) => sum + (Number(q.amount) || 0), 0),
-    [filteredQuotes]
-  );
+  }, [state.quotes, selectedYear, periodMode]);
 
   const approvedQuotesValue = useMemo(
     () =>
@@ -102,7 +156,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
   // 2. DATA REAL FINANCE & INVOICES
   const filteredFins = useMemo(() => {
     return (state.fins || []).filter((f) => matchesDateFilter(f.date));
-  }, [state.fins, dateRange]);
+  }, [state.fins, selectedYear, periodMode]);
 
   const totalInvoiced = useMemo(
     () => filteredFins.reduce((sum, f) => sum + (Number(f.amount) || 0), 0),
@@ -124,7 +178,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
   // 3. DATA REAL OPERASIONAL LAB & LAYANAN
   const filteredLabs = useMemo(() => {
     return (state.labs || []).filter((l) => matchesDateFilter(l.date));
-  }, [state.labs, dateRange]);
+  }, [state.labs, selectedYear, periodMode]);
 
   const totalLabOrders = useMemo(() => filteredLabs.length, [filteredLabs]);
   const completedLabOrders = useMemo(
@@ -139,16 +193,15 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     () => filteredLabs.reduce((sum, o) => sum + (Number(o.masuk) || 1), 0),
     [filteredLabs]
   );
-  const totalAnalysesRun = useMemo(
-    () => filteredLabs.reduce((sum, o) => sum + (Number(o.analisa) || Number(o.masuk) || 1), 0),
-    [filteredLabs]
-  );
 
   // 4. DATA REAL LOGISTIK & SUPPLY CHAIN
-  const procurements = useMemo(() => state.procurements || [], [state.procurements]);
+  const filteredProcurements = useMemo(() => {
+    return (state.procurements || []).filter((p) => matchesDateFilter(p.reqDate || p.targetDate));
+  }, [state.procurements, selectedYear, periodMode]);
+
   const totalProcurementCost = useMemo(
-    () => procurements.reduce((sum, p) => sum + (Number(p.estCost) || 0), 0),
-    [procurements]
+    () => filteredProcurements.reduce((sum, p) => sum + (Number(p.estCost) || 0), 0),
+    [filteredProcurements]
   );
   const deliveries = useMemo(() => state.deliveries || [], [state.deliveries]);
   const activeDeliveries = useMemo(
@@ -157,14 +210,17 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
   );
 
   // 5. DATA REAL MARKETING & GROWTH
-  const mkt = useMemo(() => state.mkt || [], [state.mkt]);
+  const filteredMkt = useMemo(() => {
+    return (state.mkt || []).filter((m) => matchesDateFilter(m.date));
+  }, [state.mkt, selectedYear, periodMode]);
+
   const totalMktSpend = useMemo(
-    () => mkt.reduce((sum, m) => sum + (Number(m.spend) || 0), 0),
-    [mkt]
+    () => filteredMkt.reduce((sum, m) => sum + (Number(m.spend) || 0), 0),
+    [filteredMkt]
   );
   const totalLeads = useMemo(
-    () => mkt.reduce((sum, m) => sum + (Number(m.leads) || 0), 0),
-    [mkt]
+    () => filteredMkt.reduce((sum, m) => sum + (Number(m.leads) || 0), 0),
+    [filteredMkt]
   );
   const costPerLead = useMemo(
     () => (totalLeads > 0 ? Math.round(totalMktSpend / totalLeads) : 0),
@@ -173,13 +229,16 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 
   // 6. DATA REAL MUTU, INSTRUMEN & SDM
   const insts = useMemo(() => state.insts || [], [state.insts]);
-  const instr = useMemo(() => state.instr || [], [state.instr]);
+  const filteredInstr = useMemo(() => {
+    return (state.instr || []).filter((e) => matchesDateFilter(e.date));
+  }, [state.instr, selectedYear, periodMode]);
+
   const totalDowntimeHours = useMemo(
     () =>
-      instr
+      filteredInstr
         .filter((e) => e.type === 'Downtime')
         .reduce((sum, e) => sum + (Number(e.hours) || 0), 0),
-    [instr]
+    [filteredInstr]
   );
   const competencies = useMemo(() => state.competencies || [], [state.competencies]);
   const certifiedK3Bnsp = useMemo(
@@ -187,8 +246,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     [competencies]
   );
 
-  // TOTAL REVENUE RIIL: Dihitung secara murni dari data invoice (atau won deals / quotes disetujui bila ada)
-  // JIKA TIDAK ADA DATA MAKA NILAI RIIL ADALAH 0 (TIDAK ADA DATA DUMMY / FALLBACK PALSU)
+  // TOTAL REVENUE RIIL
   const totalRevenue = useMemo(() => {
     if (totalInvoiced > 0) return totalInvoiced;
     if (wonDealsValue > 0) return wonDealsValue;
@@ -196,7 +254,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     return 0;
   }, [totalInvoiced, wonDealsValue, approvedQuotesValue]);
 
-  // LABA & PROFITABILITAS RIIL: Dihitung berbasis omset nyata dikurangi beban pengadaan nyata & marketing
+  // LABA & PROFITABILITAS RIIL
   const directCogs = useMemo(() => {
     if (totalRevenue === 0) return 0;
     return totalProcurementCost > 0
@@ -234,7 +292,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     return ((netProfit / totalRevenue) * 100).toFixed(1);
   }, [totalRevenue, netProfit]);
 
-  // Formatting Rupiah ringkas (Triliun / Miliar / Juta / Ribuan)
+  // Formatting Rupiah ringkas
   const formatRpCompact = (valRp: number) => {
     if (!valRp || valRp === 0) return 'Rp 0';
     if (valRp >= 1_000_000_000_000) {
@@ -249,7 +307,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     return idr(valRp);
   };
 
-  // Sparkline mini SVG component murni dari data
+  // Sparkline mini SVG component
   const MiniSparkline: React.FC<{
     data: number[];
     color: string;
@@ -313,15 +371,16 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     );
   };
 
-  // Tren bulanan dihitung secara murni dari agregasi riil transaksi bulanan
+  // Tren bulanan dihitung secara murni dari agregasi riil transaksi bulanan tahun terpilih
   const monthlyData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     const monthlyTotals = Array(12).fill(0);
     const monthlySamples = Array(12).fill(0);
+    const yr = String(selectedYear);
 
     // Agregasi dari invoices nyata
     (state.fins || []).forEach((f) => {
-      if (f.date) {
+      if (f.date && (periodMode === 'ALL' || f.date.startsWith(yr))) {
         const parts = f.date.split('-');
         if (parts.length >= 2) {
           const mIdx = parseInt(parts[1], 10) - 1;
@@ -334,7 +393,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 
     // Agregasi sampel dari work order lab nyata
     (state.labs || []).forEach((l) => {
-      if (l.date) {
+      if (l.date && (periodMode === 'ALL' || l.date.startsWith(yr))) {
         const parts = l.date.split('-');
         if (parts.length >= 2) {
           const mIdx = parseInt(parts[1], 10) - 1;
@@ -351,7 +410,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
       sampleCount: monthlySamples[i],
       prior: 0,
     }));
-  }, [state.fins, state.labs]);
+  }, [state.fins, state.labs, selectedYear, periodMode]);
 
   // Unit Bisnis diklasifikasikan langsung dari data riil pengujian lab & katalog layanan
   const businessUnits = useMemo(() => {
@@ -360,7 +419,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     let envCount = 0;
     let consultCount = 0;
 
-    (state.labs || []).forEach((l) => {
+    filteredLabs.forEach((l) => {
       const s = (l.service || '').toLowerCase();
       const count = Number(l.analisa) || Number(l.masuk) || 1;
       if (/icp|xrd|sem|xrf|aas|mineral|nikel|minerba|tambang|batu|logam/i.test(s)) {
@@ -421,13 +480,13 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
         color: '#8b5cf6',
       },
     ];
-  }, [state.labs, totalRevenue]);
+  }, [filteredLabs, totalRevenue]);
 
   // Top 5 Layanan dihitung dari data aktual work order pengujian lab & katalog layanan
   const topProducts = useMemo(() => {
     const serviceCounts: Record<string, { name: string; count: number; val: number }> = {};
 
-    (state.labs || []).forEach((l) => {
+    filteredLabs.forEach((l) => {
       const s = l.service || 'Pengujian Laboratorium';
       if (!serviceCounts[s]) {
         serviceCounts[s] = { name: s, count: 0, val: 0 };
@@ -472,7 +531,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
       share: Math.round((t.count / totalCount) * 100),
       color: colors[idx % colors.length],
     }));
-  }, [state.labs, state.cat]);
+  }, [filteredLabs, state.cat]);
 
   // Sebaran Wilayah Operasional dihitung murni dari data alamat akun klien CRM (state.accounts)
   const regions = useMemo(() => {
@@ -571,41 +630,168 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Filter Periode Tanggal */}
+            {/* 1. Year Switcher: < [ Tahun 2026 ] > terhubung dengan Kalender Terpadu */}
+            <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm p-1 rounded-xl border border-white/20 shadow-xs">
+              <button
+                type="button"
+                onClick={() => onYearChange(selectedYear - 1)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25 text-white transition active:scale-90"
+                title="Tahun Sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('cal')}
+                className="rounded-lg bg-emerald-500/30 px-3 py-1 text-xs font-black text-emerald-200 border border-emerald-400/50 hover:bg-emerald-500/50 transition flex items-center gap-1.5 shadow-2xs"
+                title="Terhubung dengan Kalender Terpadu (Klik untuk buka Kalender)"
+              >
+                <Calendar className="h-3.5 w-3.5 text-emerald-300" />
+                <span>Tahun {selectedYear}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onYearChange(selectedYear + 1)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25 text-white transition active:scale-90"
+                title="Tahun Berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* 2. Filter Periode Tanggal: YTD, MTD, Quarter, Kumulatif */}
             <div className="relative">
               <button
                 onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-                className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-white/20 transition"
+                className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-white/20 transition"
               >
                 <Calendar className="h-3.5 w-3.5 text-emerald-400" />
-                <span>{dateRange}</span>
+                <span>{getPeriodLabel()}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-slate-300" />
               </button>
 
               {isDateDropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-30 animate-fadeIn text-slate-800 dark:text-slate-100">
-                  {[
-                    'Tahun Berjalan (YTD 2026)',
-                    'Bulan Ini (Oktober 2026)',
-                    'Kuartal 3 (Q3 2026)',
-                    'Semua Periode (Historis Kumulatif)',
-                  ].map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => {
-                        setDateRange(opt);
-                        setIsDateDropdownOpen(false);
-                      }}
-                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition ${
-                        dateRange === opt
-                          ? 'bg-emerald-50 text-emerald-800 font-bold dark:bg-emerald-950/60 dark:text-emerald-300'
-                          : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <span>{opt}</span>
-                      {dateRange === opt && <Check className="h-3.5 w-3.5 text-emerald-600" />}
-                    </button>
-                  ))}
+                <div className="absolute right-0 mt-1.5 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900 z-50 animate-fadeIn text-slate-800 dark:text-slate-100">
+                  <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Pilihan Periode &bull; Tahun {selectedYear}
+                  </div>
+
+                  {/* Mode 1: YTD */}
+                  <button
+                    onClick={() => {
+                      setPeriodMode('YTD');
+                      setIsDateDropdownOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition ${
+                      periodMode === 'YTD'
+                        ? 'bg-emerald-50 text-emerald-800 font-bold dark:bg-emerald-950/60 dark:text-emerald-300'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="rounded bg-emerald-100 dark:bg-emerald-900 px-1.5 py-0.2 text-[10px] font-black text-emerald-800 dark:text-emerald-200">
+                          YTD
+                        </span>
+                        <span>Tahun Berjalan (YTD {selectedYear})</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-normal pl-8">
+                        1 Jan {selectedYear} s/d Hari Ini
+                      </div>
+                    </div>
+                    {periodMode === 'YTD' && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
+
+                  {/* Mode 2: MTD */}
+                  <button
+                    onClick={() => {
+                      setPeriodMode('MTD');
+                      setIsDateDropdownOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition ${
+                      periodMode === 'MTD'
+                        ? 'bg-emerald-50 text-emerald-800 font-bold dark:bg-emerald-950/60 dark:text-emerald-300'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="rounded bg-blue-100 dark:bg-blue-900 px-1.5 py-0.2 text-[10px] font-black text-blue-800 dark:text-blue-200">
+                          MTD
+                        </span>
+                        <span>Bulan Ini (MTD {currentMonthName} {selectedYear})</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-normal pl-8">
+                        Akumulasi bulan berjalan
+                      </div>
+                    </div>
+                    {periodMode === 'MTD' && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
+
+                  {/* Mode 3: QUARTER */}
+                  <div className="my-1.5 border-t border-slate-100 dark:border-slate-800 px-2.5 pt-1.5 pb-0.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Quarter / Kuartal {selectedYear}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5 px-1">
+                    {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map((q) => {
+                      const qLabels = {
+                        Q1: 'Jan - Mar',
+                        Q2: 'Apr - Jun',
+                        Q3: 'Jul - Sep',
+                        Q4: 'Okt - Des',
+                      };
+                      return (
+                        <button
+                          key={q}
+                          onClick={() => {
+                            setPeriodMode(q);
+                            setIsDateDropdownOpen(false);
+                          }}
+                          className={`flex flex-col rounded-lg px-2.5 py-1.5 text-left text-xs transition border ${
+                            periodMode === q
+                              ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold dark:bg-emerald-950/60 dark:text-emerald-300 shadow-2xs'
+                              : 'border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold">{q} {selectedYear}</span>
+                            {periodMode === q && <Check className="h-3 w-3 text-emerald-600" />}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-normal">{qLabels[q]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Mode 4: KUMULATIF */}
+                  <div className="my-1.5 border-t border-slate-100 dark:border-slate-800 pt-1" />
+                  <button
+                    onClick={() => {
+                      setPeriodMode('ALL');
+                      setIsDateDropdownOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition ${
+                      periodMode === 'ALL'
+                        ? 'bg-emerald-50 text-emerald-800 font-bold dark:bg-emerald-950/60 dark:text-emerald-300'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="rounded bg-amber-100 dark:bg-amber-900 px-1.5 py-0.2 text-[10px] font-black text-amber-800 dark:text-amber-200">
+                          ALL
+                        </span>
+                        <span>Semua Periode (Historis Kumulatif)</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-normal pl-8">
+                        Seluruh histori transaksi multi-tahun
+                      </div>
+                    </div>
+                    {periodMode === 'ALL' && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
                 </div>
               )}
             </div>
@@ -735,7 +921,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
               {totalCustomerCount} <span className="text-xs font-medium text-slate-400">Klien</span>
             </div>
             <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">
-              <span>{state.deals?.length || 0} Deal Sales</span>
+              <span>{filteredDeals.length} Deal Sales ({selectedYear})</span>
             </div>
           </div>
           <div className="mt-3 flex justify-end">
@@ -820,7 +1006,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
           </div>
           <div className="mt-2">
             <div className="text-sm font-black text-slate-900 dark:text-white">
-              {procurements.length} Pengadaan PO
+              {filteredProcurements.length} Pengadaan PO
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
               Est. Biaya: {formatRpCompact(totalProcurementCost)} &bull; {activeDeliveries} Kurir Aktif
@@ -845,7 +1031,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
               {totalLeads} Leads Masuk
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
-              {mkt.length} Kampanye &bull; CPL: {formatRpCompact(costPerLead)}
+              {filteredMkt.length} Kampanye &bull; CPL: {formatRpCompact(costPerLead)}
             </p>
           </div>
           <button
@@ -887,7 +1073,11 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Tren Pendapatan Bulanan</h3>
-                <p className="text-xs text-slate-400">Realisasi faktur invoice per bulan (Rp IDR)</p>
+                <p className="text-xs text-slate-400">
+                  {periodMode === 'ALL'
+                    ? 'Realisasi faktur invoice per bulan (Seluruh Tahun)'
+                    : `Realisasi faktur invoice per bulan (Tahun ${selectedYear})`}
+                </p>
               </div>
               <div className="flex items-center gap-3 text-[11px]">
                 <div className="flex items-center gap-1.5">
@@ -906,7 +1096,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
                     <line key={i} x1="0" y1={y} x2="360" y2={y} stroke="currentColor" strokeOpacity="0.08" strokeDasharray="3 3" />
                   ))}
 
-                  {/* Monthly Bars (Current Year Real Data) */}
+                  {/* Monthly Bars (Real Data) */}
                   {monthlyData.map((d, i) => {
                     const maxVal = Math.max(...monthlyData.map((m) => m.current), 1);
                     const x = i * 29 + 10;
@@ -1267,10 +1457,10 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
 
               {/* Bottom Labels */}
               <div className="flex justify-between pt-2 text-[10px] font-mono text-slate-400">
-                <span>Q1 2026</span>
-                <span>Q2 2026</span>
-                <span>Q3 2026</span>
-                <span>Q4 2026</span>
+                <span>Q1 {selectedYear}</span>
+                <span>Q2 {selectedYear}</span>
+                <span>Q3 {selectedYear}</span>
+                <span>Q4 {selectedYear}</span>
               </div>
             </div>
           </div>
@@ -1290,7 +1480,11 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span>Ringkasan Wawasan Strategis Bisnis (Key Insights)</span>
           </h3>
-          <span className="text-xs text-slate-400">Sinkronisasi data langsung antar modul</span>
+          <span className="text-xs text-slate-400">
+            {periodMode === 'ALL'
+              ? 'Sinkronisasi data historis multi-tahun'
+              : `Sinkronisasi periode ${getPeriodLabel()}`}
+          </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -1304,7 +1498,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                 {pipelineDeals.length > 0 ? (
                   <>
-                    Pipeline penjualan saat ini mencatat <strong>{formatRpCompact(pipelineValue)}</strong> dari <strong>{pipelineDeals.length}</strong> deal aktif. Total deal berhasil disetujui (Won): <strong>{formatRpCompact(wonDealsValue)}</strong>.
+                    Pipeline penjualan mencatat <strong>{formatRpCompact(pipelineValue)}</strong> dari <strong>{pipelineDeals.length}</strong> deal aktif. Total deal berhasil disetujui (Won): <strong>{formatRpCompact(wonDealsValue)}</strong>.
                   </>
                 ) : (
                   <>
@@ -1325,7 +1519,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                 {totalLabOrders > 0 ? (
                   <>
-                    Laboratorium memproses <strong>{totalLabOrders}</strong> work order ({completedLabOrders} selesai, {inProgressLabOrders} running). Layanan dengan volume tertinggi: <strong>{topProducts[0]?.name || 'Pengujian Lab'}</strong> ({totalPhysicalSamples} sampel fisik).
+                    Laboratorium memproses <strong>{totalLabOrders}</strong> work order ({completedLabOrders} selesai, {inProgressLabOrders} running). Layanan volume tertinggi: <strong>{topProducts[0]?.name || 'Pengujian Lab'}</strong> ({totalPhysicalSamples} sampel fisik).
                   </>
                 ) : (
                   <>
@@ -1365,7 +1559,7 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
             <div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">Logistik, Marketing &amp; Kepatuhan</h4>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                Tercatat <strong>{procurements.length}</strong> pengadaan PO ({formatRpCompact(totalProcurementCost)}), <strong>{totalLeads}</strong> leads pemasaran multichannel, serta <strong>{insts.length}</strong> instrumen laboratorium terdaftar ({totalDowntimeHours} jam downtime).
+                Tercatat <strong>{filteredProcurements.length}</strong> pengadaan PO ({formatRpCompact(totalProcurementCost)}), <strong>{totalLeads}</strong> leads pemasaran multichannel, serta <strong>{insts.length}</strong> instrumen laboratorium terdaftar ({totalDowntimeHours} jam downtime).
               </p>
             </div>
           </div>

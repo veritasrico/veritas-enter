@@ -150,6 +150,7 @@ export default function App() {
 
   // Day detail modal state for calendar
   const [activeDayDate, setActiveDayDate] = useState<string | null>(null);
+  const [calendarYear, setCalendarYear] = useState<number>(2026);
 
   // AI analytics cached result
   const [aiResult, setAiResult] = useState<AiAnalyticsResult | null>(null);
@@ -761,6 +762,8 @@ export default function App() {
         return (
           <OverviewDashboardView
             state={state}
+            selectedYear={calendarYear}
+            onYearChange={setCalendarYear}
             onNavigate={(t) => setCurrentTab(t)}
             onOpenWa={(a, tmpl) => handleOpenWaModal(a, tmpl)}
             onOpenSlide={() => setIsSlideModalOpen(true)}
@@ -865,6 +868,8 @@ export default function App() {
         return (
           <CalendarView
             state={state}
+            selectedYear={calendarYear}
+            onYearChange={setCalendarYear}
             onSaveActivity={(act) => {
               setState((prev) => {
                 const acts = [act, ...prev.acts.filter((a) => a.id !== act.id)];

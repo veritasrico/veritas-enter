@@ -32,6 +32,8 @@ import { pad, today, uid, idr, ACTIVITIES } from '../../utils/seedData';
 
 interface CalendarViewProps {
   state: AppState;
+  selectedYear?: number;
+  onYearChange?: (year: number) => void;
   onSaveActivity: (act: Activity) => void;
   onDeleteActivity: (id: string) => void;
   onSaveMkt: (m: MarketingCampaign) => void;
@@ -48,6 +50,8 @@ type FormCategory = 'sales' | 'marketing' | 'lab' | 'agenda' | 'closed_service';
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
   state,
+  selectedYear: propSelectedYear,
+  onYearChange,
   onSaveActivity,
   onDeleteActivity,
   onSaveMkt,
@@ -59,7 +63,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onSaveAccount,
   onSaveCat,
 }) => {
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [internalYear, setInternalYear] = useState<number>(new Date().getFullYear());
+  const selectedYear = propSelectedYear !== undefined ? propSelectedYear : internalYear;
+  const setSelectedYear = (action: number | ((prev: number) => number)) => {
+    const nextVal = typeof action === 'function' ? action(selectedYear) : action;
+    if (onYearChange) {
+      onYearChange(nextVal);
+    }
+    setInternalYear(nextVal);
+  };
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const curDate = today();
   const [selectedDate, setSelectedDate] = useState<string>(curDate);
