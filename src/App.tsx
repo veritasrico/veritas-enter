@@ -1216,6 +1216,17 @@ export default function App() {
           />
         );
       case 'set':
+        if (currentUser.role !== 'admin') {
+          return (
+            <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 my-8">
+              <div className="h-16 w-16 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center text-rose-600">
+                <Shield className="h-8 w-8" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Akses Ditolak - Khusus Administrator</h3>
+              <p className="text-xs text-slate-500 max-w-md">Modul Pengaturan Sistem & Database hanya dapat diakses dan diubah oleh akun dengan peran Administrator (Admin).</p>
+            </div>
+          );
+        }
         return (
           <SettingsView
             settings={state.settings}
@@ -1265,6 +1276,17 @@ export default function App() {
           />
         );
       case 'users':
+        if (currentUser.role !== 'admin') {
+          return (
+            <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 my-8">
+              <div className="h-16 w-16 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center text-rose-600">
+                <Shield className="h-8 w-8" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Akses Ditolak - Khusus Administrator</h3>
+              <p className="text-xs text-slate-500 max-w-md">Modul Manajemen Pengguna & Hak Akses hanya dapat dikelola oleh akun dengan peran Administrator (Admin).</p>
+            </div>
+          );
+        }
         return (
           <UserManagementView
             users={usersList}
@@ -1446,6 +1468,8 @@ export default function App() {
       <MobileMenuModal
         isOpen={isMobileMenuOpen}
         currentTab={currentTab}
+        userRole={currentUser.role}
+        allowedTabs={currentUser.allowedTabs}
         onSelectTab={(tab) => {
           if (tab === 'slide_export') {
             setIsSlideModalOpen(true);

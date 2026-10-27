@@ -34,6 +34,8 @@ import { VeritasLogo } from './VeritasLogo';
 interface MobileMenuModalProps {
   isOpen: boolean;
   currentTab: TabKey;
+  userRole?: string;
+  allowedTabs?: TabKey[];
   onSelectTab: (tab: TabKey) => void;
   onClose: () => void;
 }
@@ -41,6 +43,8 @@ interface MobileMenuModalProps {
 export const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
   isOpen,
   currentTab,
+  userRole,
+  allowedTabs,
   onSelectTab,
   onClose,
 }) => {
@@ -113,16 +117,30 @@ export const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
       items: [
         { key: 'competency' as TabKey, label: 'Matriks Kompetensi Analis (6.2)', icon: <Award className="h-4 w-4 text-amber-500" /> },
         { key: 'employees' as TabKey, label: 'Direktori Staf & Personel', icon: <Contact className="h-4 w-4" /> },
-        { key: 'users' as TabKey, label: 'Manajemen Akun & Hak Akses', icon: <UserCheck className="h-4 w-4 text-emerald-600" /> },
+        { key: 'users' as TabKey, label: 'Manajemen Akun & Hak Akses', icon: <UserCheck className="h-4 w-4 text-emerald-600" />, roles: ['admin'] },
         { key: 'log' as TabKey, label: 'Log Book & Audit Trail', icon: <History className="h-4 w-4" /> },
-        { key: 'set' as TabKey, label: 'Pengaturan & Reset Data', icon: <Settings className="h-4 w-4" /> },
+        { key: 'set' as TabKey, label: 'Pengaturan & Reset Data', icon: <Settings className="h-4 w-4" />, roles: ['admin'] },
       ],
     },
   ];
 
+  const visibleMenuSections = menuSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (item.roles && userRole && !item.roles.includes(userRole)) return false;
+        if (userRole === 'admin') return true;
+        if (allowedTabs && allowedTabs.length > 0) {
+          return allowedTabs.includes(item.key);
+        }
+        return true;
+      }),
+    }))
+    .filter((s) => s.items.length > 0);
+
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>(() => {
     const initial: Record<number, boolean> = {};
-    menuSections.forEach((s) => {
+    visibleMenuSections.forEach((s) => {
       const hasActive = s.items.some((i) => i.key === currentTab);
       initial[s.num] = hasActive || s.num === 1;
     });
@@ -162,7 +180,7 @@ export const MobileMenuModal: React.FC<MobileMenuModalProps> = ({
 
         {/* Content list with collapsible accordions */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {menuSections.map((section) => {
+          {visibleMenuSections.map((section) => {
             const isExpanded = !!expandedSections[section.num];
             const hasActiveChild = section.items.some((i) => i.key === currentTab);
 

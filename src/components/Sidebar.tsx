@@ -267,11 +267,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
+        if (item.roles && !item.roles.includes(userRole)) return false;
         if (userRole === 'admin') return true;
         if (allowedTabs && allowedTabs.length > 0) {
           return allowedTabs.includes(item.key);
         }
-        if (item.roles && !item.roles.includes(userRole)) return false;
         return true;
       }),
     }))
