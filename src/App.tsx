@@ -86,7 +86,14 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<ActiveUser>(() => {
     try {
       const saved = localStorage.getItem('veritas_active_user');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.allowedTabs && Array.isArray(parsed.allowedTabs)) {
+          if (!parsed.allowedTabs.includes('insts')) parsed.allowedTabs.push('insts');
+          if (!parsed.allowedTabs.includes('cat')) parsed.allowedTabs.push('cat');
+        }
+        return parsed;
+      }
     } catch (e) {
       console.warn('Failed to parse saved user:', e);
     }
@@ -719,8 +726,9 @@ export default function App() {
 
   // Active View Renderer shared between Web View & Mobile Simulator
   const renderActiveView = () => {
-    // Role-based access restriction check
+    // Role-based access restriction check (admin always has unrestricted access)
     if (
+      currentUser.role !== 'admin' &&
       currentUser.allowedTabs &&
       currentUser.allowedTabs.length > 0 &&
       !currentUser.allowedTabs.includes(currentTab)

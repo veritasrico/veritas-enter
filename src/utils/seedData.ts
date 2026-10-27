@@ -1160,6 +1160,7 @@ export const ALL_SYSTEM_TABS: { key: TabKey; label: string; group: string }[] = 
   { key: 'accounts', label: 'Kontak & Segmen CRM', group: 'Sales & Customer' },
   { key: 'deals', label: 'Papan Deal & Pipeline', group: 'Sales & Customer' },
   { key: 'quote', label: 'Penawaran Harga (Quotes)', group: 'Sales & Customer' },
+  { key: 'cat', label: 'Katalog Layanan & Tarif', group: 'Sales & Customer' },
   { key: 'acts', label: 'Aktivitas Sales & Follow-up', group: 'Sales & Customer' },
 
   // 3. Marketing & Growth
@@ -1168,6 +1169,7 @@ export const ALL_SYSTEM_TABS: { key: TabKey; label: string; group: string }[] = 
   // 4. Laboratory Operations
   { key: 'labdash', label: 'Dashboard Lab (SID & Workload)', group: 'Laboratory Operations' },
   { key: 'lab', label: 'Work Order & Pengujian Sampel', group: 'Laboratory Operations' },
+  { key: 'insts', label: 'Master Instrumen & Kalibrasi', group: 'Laboratory Operations' },
   { key: 'instr', label: 'Utilisasi, Downtime & Kalibrasi', group: 'Laboratory Operations' },
 
   // 5. Quality & Compliance
@@ -1200,9 +1202,9 @@ export const DEFAULT_MANAGED_USERS: ManagedUserAccount[] = [
     pin: '1234',
     allowedTabs: [
       'dash', 'slide_export', 'ai_analytics', 'cal',
-      'accounts', 'deals', 'quote', 'acts',
+      'accounts', 'deals', 'quote', 'cat', 'acts',
       'mkt',
-      'labdash', 'lab', 'instr',
+      'labdash', 'lab', 'insts', 'instr',
       'qcqa',
       'fin', 'monthly_report',
       'procurement', 'inv', 'sample_logistics',
@@ -1219,7 +1221,7 @@ export const DEFAULT_MANAGED_USERS: ManagedUserAccount[] = [
     role: 'sales',
     department: 'Divisi Komersial & Client Relations',
     pin: '',
-    allowedTabs: ['dash', 'cal', 'accounts', 'deals', 'quote', 'acts', 'slide_export'],
+    allowedTabs: ['dash', 'cal', 'accounts', 'deals', 'quote', 'cat', 'acts', 'slide_export'],
     isActive: true,
     createdAt: '2026-01-01',
     note: 'Akses CRM, Pipeline Penjualan, dan Penawaran Harga',
@@ -1231,7 +1233,7 @@ export const DEFAULT_MANAGED_USERS: ManagedUserAccount[] = [
     role: 'lab',
     department: 'Pengujian Spektroskopi & Preparasi',
     pin: '',
-    allowedTabs: ['dash', 'cal', 'labdash', 'lab', 'instr', 'qcqa', 'inv', 'procurement', 'sample_logistics', 'competency'],
+    allowedTabs: ['dash', 'cal', 'labdash', 'lab', 'insts', 'instr', 'qcqa', 'inv', 'cat', 'procurement', 'sample_logistics', 'competency'],
     isActive: true,
     createdAt: '2026-01-01',
     note: 'Akses operasional pengujian lab, logistik sampel, stok reagen, dan matriks kompetensi',
@@ -1243,7 +1245,7 @@ export const DEFAULT_MANAGED_USERS: ManagedUserAccount[] = [
     role: 'admin',
     department: 'QA/QC & Akreditasi ISO/IEC 17025',
     pin: '',
-    allowedTabs: ['dash', 'cal', 'qcqa', 'labdash', 'lab', 'instr', 'competency', 'employees', 'log'],
+    allowedTabs: ['dash', 'cal', 'qcqa', 'labdash', 'lab', 'insts', 'instr', 'competency', 'employees', 'log'],
     isActive: true,
     createdAt: '2026-01-01',
     note: 'Pengawasan sistem mutu ISO 17025, kualifikasi analis klausul 6.2, CAPA, dan audit log',
