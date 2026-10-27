@@ -1,0 +1,449 @@
+{
+  "daily": [
+    {
+      "id": 1,
+      "area": "Kesiapan personel",
+      "q": "Personel yang bertugas telah diotorisasi untuk metode/pekerjaan yang dilakukan?",
+      "e": "Matriks otorisasi, kompetensi"
+    },
+    {
+      "id": 2,
+      "area": "Kesiapan personel",
+      "q": "APD dan briefing risiko tersedia/dilaksanakan sesuai aktivitas?",
+      "e": "Observasi area, catatan K3"
+    },
+    {
+      "id": 3,
+      "area": "Lingkungan",
+      "q": "Suhu, kelembapan, kebersihan, getaran atau parameter lingkungan lain memenuhi batas metode?",
+      "e": "Log lingkungan"
+    },
+    {
+      "id": 4,
+      "area": "Lingkungan",
+      "q": "Area kerja bersih, tertata, dan mencegah kontaminasi silang?",
+      "e": "Checklist area"
+    },
+    {
+      "id": 5,
+      "area": "Peralatan",
+      "q": "Instrumen dan alat ukur berstatus layak pakai, tidak overdue kalibrasi/verifikasi?",
+      "e": "Register alat, label status"
+    },
+    {
+      "id": 6,
+      "area": "Peralatan",
+      "q": "Pemeriksaan awal/system suitability/performance check lulus sebelum analisis?",
+      "e": "Log instrumen, hasil QC"
+    },
+    {
+      "id": 7,
+      "area": "Peralatan",
+      "q": "Alarm, kerusakan atau hasil pemeriksaan abnormal ditindaklanjuti sebelum penggunaan?",
+      "e": "Log kerusakan, status alat"
+    },
+    {
+      "id": 8,
+      "area": "Peralatan",
+      "q": "Pemeliharaan harian sesuai SOP dilakukan dan direkam?",
+      "e": "Log maintenance"
+    },
+    {
+      "id": 9,
+      "area": "Bahan/reagen",
+      "q": "Reagen, gas, standar, CRM, dan bahan habis pakai sesuai spesifikasi dan belum kedaluwarsa?",
+      "e": "Label, CoA, expiry"
+    },
+    {
+      "id": 10,
+      "area": "Bahan/reagen",
+      "q": "Larutan buatan sendiri berlabel identitas, konsentrasi, tanggal, expiry dan pembuat?",
+      "e": "Log preparasi"
+    },
+    {
+      "id": 11,
+      "area": "Sampel",
+      "q": "Identitas sampel sesuai permintaan/order dan diberi ID unik?",
+      "e": "Form penerimaan, register"
+    },
+    {
+      "id": 12,
+      "area": "Sampel",
+      "q": "Kondisi, jumlah, kemasan dan kecukupan sampel diperiksa saat penerimaan?",
+      "e": "Checklist penerimaan"
+    },
+    {
+      "id": 13,
+      "area": "Sampel",
+      "q": "Penyimpangan sampel diklarifikasi dan disetujui sesuai prosedur sebelum pengujian?",
+      "e": "Catatan deviasi, komunikasi"
+    },
+    {
+      "id": 14,
+      "area": "Sampel",
+      "q": "Lokasi, status, dan kondisi penyimpanan sampel dapat ditelusuri?",
+      "e": "Log penyimpanan"
+    },
+    {
+      "id": 15,
+      "area": "Preparasi",
+      "q": "Preparasi mengikuti metode/SOP terkini dan parameter kritis dicatat?",
+      "e": "Worksheet preparasi"
+    },
+    {
+      "id": 16,
+      "area": "Preparasi",
+      "q": "Alat preparasi dibersihkan untuk mencegah kontaminasi silang?",
+      "e": "Log pembersihan"
+    },
+    {
+      "id": 17,
+      "area": "Metode",
+      "q": "Metode sesuai matriks, rentang, permintaan pelanggan, dan scope yang disetujui?",
+      "e": "Order, metode, scope"
+    },
+    {
+      "id": 18,
+      "area": "Metode",
+      "q": "Parameter metode, kondisi instrumen, pengenceran dan penyimpangan dicatat?",
+      "e": "Raw data, worksheet"
+    },
+    {
+      "id": 19,
+      "area": "Metode",
+      "q": "Metode modifikasi/nonstandar telah divalidasi dan disetujui sebelum digunakan?",
+      "e": "Validasi metode"
+    },
+    {
+      "id": 20,
+      "area": "QC hasil",
+      "q": "Blank, duplikat, CRM, kontrol atau QC lain dijalankan sesuai rencana?",
+      "e": "QC plan, control chart"
+    },
+    {
+      "id": 21,
+      "area": "QC hasil",
+      "q": "Kriteria penerimaan QC terpenuhi sebelum hasil sampel dirilis?",
+      "e": "Hasil QC, acceptance criteria"
+    },
+    {
+      "id": 22,
+      "area": "QC hasil",
+      "q": "QC gagal, outlier atau hasil meragukan ditahan dan diinvestigasi?",
+      "e": "NCR, investigasi"
+    },
+    {
+      "id": 23,
+      "area": "Data",
+      "q": "Data mentah tertelusur ke sampel, analis, metode, alat dan waktu pelaksanaan?",
+      "e": "Raw data, metadata"
+    },
+    {
+      "id": 24,
+      "area": "Data",
+      "q": "Koreksi data mempertahankan nilai awal, alasan, tanggal dan identitas pengubah?",
+      "e": "Audit trail"
+    },
+    {
+      "id": 25,
+      "area": "Data",
+      "q": "Data elektronik disimpan, dibackup, dan aksesnya dikendalikan sesuai prosedur?",
+      "e": "Log backup, hak akses"
+    },
+    {
+      "id": 26,
+      "area": "Perhitungan",
+      "q": "Satuan, faktor pengenceran, kurva, perhitungan dan transkripsi diperiksa?",
+      "e": "Review perhitungan"
+    },
+    {
+      "id": 27,
+      "area": "Pelaporan",
+      "q": "Hasil ditinjau teknis dan diotorisasi sebelum laporan diterbitkan?",
+      "e": "Checklist review"
+    },
+    {
+      "id": 28,
+      "area": "Pelaporan",
+      "q": "Identitas sampel, metode, hasil, satuan dan informasi wajib lengkap?",
+      "e": "Template laporan"
+    },
+    {
+      "id": 29,
+      "area": "Pelaporan",
+      "q": "Pernyataan kesesuaian memakai decision rule yang disepakati bila relevan?",
+      "e": "Kontrak, decision rule"
+    },
+    {
+      "id": 30,
+      "area": "Pekerjaan tidak sesuai",
+      "q": "Pekerjaan tidak sesuai/keluhan/deviasi hari ini dicatat dan dieskalasikan?",
+      "e": "NCR, log keluhan"
+    },
+    {
+      "id": 31,
+      "area": "Pekerjaan tidak sesuai",
+      "q": "Pekerjaan terdampak ditahan dan dampak terhadap hasil sebelumnya dinilai?",
+      "e": "Hold record, impact assessment"
+    },
+    {
+      "id": 32,
+      "area": "CAPA",
+      "q": "Tindakan segera dibedakan dari tindakan korektif untuk menghilangkan akar penyebab?",
+      "e": "CAPA, RCA"
+    },
+    {
+      "id": 33,
+      "area": "Dokumen",
+      "q": "SOP, formulir dan instruksi kerja yang digunakan merupakan versi terkini?",
+      "e": "Master list"
+    },
+    {
+      "id": 34,
+      "area": "K3/limbah",
+      "q": "Limbah, sampel berbahaya dan tumpahan ditangani sesuai prosedur?",
+      "e": "Log limbah, insiden"
+    },
+    {
+      "id": 35,
+      "area": "Penutupan",
+      "q": "Sampel, preparat, standar dan reagen disimpan kembali dengan benar?",
+      "e": "Checklist closing"
+    },
+    {
+      "id": 36,
+      "area": "Penutupan",
+      "q": "Instrumen dan area ditinggalkan dalam kondisi aman sesuai SOP?",
+      "e": "Log shutdown"
+    },
+    {
+      "id": 37,
+      "area": "Handover",
+      "q": "Backlog, pekerjaan tertunda, masalah sampel dan tindak lanjut diserahterimakan?",
+      "e": "Handover log"
+    },
+    {
+      "id": 38,
+      "area": "Ketidakberpihakan",
+      "q": "Tekanan pelanggan/konflik kepentingan/permintaan mengubah hasil dieskalasikan?",
+      "e": "Risk log, catatan komunikasi"
+    },
+    {
+      "id": 39,
+      "area": "Ketertelusuran",
+      "q": "Standar acuan dan alat ukur kritis memiliki ketertelusuran yang sesuai tujuan?",
+      "e": "Sertifikat kalibrasi, CRM CoA"
+    },
+    {
+      "id": 40,
+      "area": "Tinjauan supervisor",
+      "q": "Supervisor meninjau QC gagal, alat bermasalah, dan risiko validitas hasil?",
+      "e": "Supervisor sign-off"
+    }
+  ],
+  "gap": [
+    {
+      "id": 1,
+      "cl": "4.1",
+      "area": "Ketidakberpihakan",
+      "q": "Risiko ketidakberpihakan, tekanan komersial dan konflik kepentingan diidentifikasi dan dimitigasi?",
+      "e": "Risk register, deklarasi konflik, mitigasi"
+    },
+    {
+      "id": 2,
+      "cl": "4.2",
+      "area": "Kerahasiaan",
+      "q": "Informasi pelanggan, sampel, dan hasil dilindungi dari akses/pengungkapan tidak sah?",
+      "e": "NDA, kontrol akses"
+    },
+    {
+      "id": 3,
+      "cl": "5",
+      "area": "Struktur",
+      "q": "Tanggung jawab, wewenang, struktur, dan ruang lingkup kegiatan ditetapkan?",
+      "e": "Struktur organisasi, uraian jabatan, scope"
+    },
+    {
+      "id": 4,
+      "cl": "6.2",
+      "area": "Personel",
+      "q": "Kompetensi, pelatihan, supervisi, evaluasi, dan otorisasi personel terdokumentasi?",
+      "e": "Matriks kompetensi, rekaman pelatihan"
+    },
+    {
+      "id": 5,
+      "cl": "6.3",
+      "area": "Fasilitas",
+      "q": "Kondisi lingkungan yang memengaruhi hasil dipantau dan dikendalikan?",
+      "e": "Log lingkungan, batas tindakan"
+    },
+    {
+      "id": 6,
+      "cl": "6.4",
+      "area": "Peralatan",
+      "q": "Peralatan teridentifikasi, terkalibrasi/diverifikasi, dipelihara dan memiliki status jelas?",
+      "e": "Register alat, sertifikat, log maintenance"
+    },
+    {
+      "id": 7,
+      "cl": "6.4",
+      "area": "Peralatan",
+      "q": "Kerusakan alat memicu penghentian penggunaan dan evaluasi dampak hasil sebelumnya?",
+      "e": "Out-of-service, impact assessment"
+    },
+    {
+      "id": 8,
+      "cl": "6.5",
+      "area": "Ketertelusuran",
+      "q": "Ketertelusuran metrologi sesuai tujuan pengujian dibuktikan?",
+      "e": "Sertifikat kalibrasi, CRM"
+    },
+    {
+      "id": 9,
+      "cl": "6.6",
+      "area": "Penyedia eksternal",
+      "q": "Pemasok, kalibrasi eksternal, dan layanan yang memengaruhi hasil dievaluasi?",
+      "e": "Approved supplier, evaluasi"
+    },
+    {
+      "id": 10,
+      "cl": "7.1",
+      "area": "Tinjauan permintaan",
+      "q": "Kontrak/permintaan ditinjau untuk memastikan metode, kapasitas, scope, dan persyaratan jelas?",
+      "e": "Contract review"
+    },
+    {
+      "id": 11,
+      "cl": "7.2",
+      "area": "Metode",
+      "q": "Metode standar diverifikasi; metode modifikasi/nonstandar divalidasi sebelum digunakan?",
+      "e": "Laporan verifikasi/validasi"
+    },
+    {
+      "id": 12,
+      "cl": "7.3",
+      "area": "Sampling",
+      "q": "Bila sampling dilakukan, rencana dan metode sampling tersedia serta sesuai tujuan?",
+      "e": "SOP, rencana, rekaman sampling"
+    },
+    {
+      "id": 13,
+      "cl": "7.4",
+      "area": "Penanganan sampel",
+      "q": "Sampel diidentifikasi, ditangani, disimpan, dipindahkan dan dibuang terkendali?",
+      "e": "Register, label, log penyimpanan"
+    },
+    {
+      "id": 14,
+      "cl": "7.5",
+      "area": "Rekaman teknis",
+      "q": "Rekaman cukup untuk menelusuri dan merekonstruksi pekerjaan; perubahan dapat dilacak?",
+      "e": "Worksheet, raw data, audit trail"
+    },
+    {
+      "id": 15,
+      "cl": "7.6",
+      "area": "Ketidakpastian",
+      "q": "Ketidakpastian pengukuran dievaluasi untuk pengujian yang relevan?",
+      "e": "Evaluasi uncertainty"
+    },
+    {
+      "id": 16,
+      "cl": "7.7",
+      "area": "Validitas hasil",
+      "q": "QC, CRM, duplikat, blank, PT/ILC atau pemantauan lain direncanakan dan ditinjau?",
+      "e": "QC plan, control chart, PT"
+    },
+    {
+      "id": 17,
+      "cl": "7.8",
+      "area": "Pelaporan",
+      "q": "Laporan ditinjau/diotorisasi dan memuat informasi wajib secara benar?",
+      "e": "Laporan, checklist review"
+    },
+    {
+      "id": 18,
+      "cl": "7.8",
+      "area": "Decision rule",
+      "q": "Pernyataan kesesuaian didukung kriteria dan decision rule yang disepakati bila relevan?",
+      "e": "Kontrak, decision rule"
+    },
+    {
+      "id": 19,
+      "cl": "7.9",
+      "area": "Keluhan",
+      "q": "Keluhan diterima, diselidiki, diselesaikan dan direkam secara objektif?",
+      "e": "Prosedur dan register keluhan"
+    },
+    {
+      "id": 20,
+      "cl": "7.10",
+      "area": "Pekerjaan tidak sesuai",
+      "q": "Pekerjaan tidak sesuai dikendalikan, dampaknya dinilai dan keputusan didokumentasikan?",
+      "e": "NCR, impact assessment"
+    },
+    {
+      "id": 21,
+      "cl": "7.11",
+      "area": "Data/informasi",
+      "q": "Sistem data, spreadsheet dan perangkat lunak diverifikasi/diuji sesuai risiko; akses dan backup dikendalikan?",
+      "e": "Validasi software, access/backup log"
+    },
+    {
+      "id": 22,
+      "cl": "8.2",
+      "area": "Sistem manajemen",
+      "q": "Kebijakan, tujuan, proses dan dokumentasi sistem tersedia dan dipahami?",
+      "e": "Kebijakan, sasaran, dokumentasi"
+    },
+    {
+      "id": 23,
+      "cl": "8.3",
+      "area": "Pengendalian dokumen",
+      "q": "Dokumen ditinjau, disetujui, direvisi, dan versi terbaru dikendalikan?",
+      "e": "Master list, riwayat revisi"
+    },
+    {
+      "id": 24,
+      "cl": "8.4",
+      "area": "Rekaman",
+      "q": "Rekaman disimpan, dilindungi, dapat ditemukan, memiliki retensi dan pemusnahan terkendali?",
+      "e": "Matriks retensi, arsip"
+    },
+    {
+      "id": 25,
+      "cl": "8.5",
+      "area": "Risiko/peluang",
+      "q": "Risiko dan peluang yang dapat memengaruhi hasil diidentifikasi dan tindakannya dievaluasi?",
+      "e": "Risk register, action tracker"
+    },
+    {
+      "id": 26,
+      "cl": "8.6",
+      "area": "Peningkatan",
+      "q": "Tren QC, masukan pelanggan, audit dan KPI digunakan untuk peningkatan?",
+      "e": "Improvement log"
+    },
+    {
+      "id": 27,
+      "cl": "8.7",
+      "area": "Tindakan korektif",
+      "q": "Akar penyebab ketidaksesuaian dianalisis dan efektivitas CAPA diverifikasi?",
+      "e": "RCA, CAPA, bukti efektivitas"
+    },
+    {
+      "id": 28,
+      "cl": "8.8",
+      "area": "Audit internal",
+      "q": "Audit internal direncanakan, dilakukan oleh personel objektif/kompeten, dan temuan ditindaklanjuti?",
+      "e": "Program dan laporan audit"
+    },
+    {
+      "id": 29,
+      "cl": "8.9",
+      "area": "Tinjauan manajemen",
+      "q": "Tinjauan manajemen dilakukan dan keputusan/tindak lanjut terdokumentasi?",
+      "e": "Notulen, action register"
+    }
+  ]
+}

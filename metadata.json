@@ -1,0 +1,6 @@
+{
+  "name": "Veritas Enterprise & Lab Management",
+  "description": "Aplikasi enterprise terpadu untuk manajemen tugas, CRM sales, operasional laboratorium, kalkulasi sampel unik per instrumen, keuangan, notifikasi referral, dan analitik AI real-time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
