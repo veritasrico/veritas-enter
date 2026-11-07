@@ -284,10 +284,12 @@ export async function getDatabase(env: Env): Promise<{ data: any; syncedAt: stri
   return { data: INITIAL_SEED_DATA, syncedAt: inMemoryTimestamp };
 }
 
-export async function setDatabase(env: Env, data: any, syncedAt: string): Promise<void> {
+export async function setDatabase(env: Env, data: any, syncedAt: string): Promise<boolean> {
+  let supabaseOk = false;
+
   // 1. Write to Supabase PostgreSQL Database
   try {
-    await saveToSupabase(env, data, syncedAt);
+    supabaseOk = await saveToSupabase(env, data, syncedAt);
   } catch (err) {
     console.warn('Supabase save error:', err);
   }
@@ -309,6 +311,8 @@ export async function setDatabase(env: Env, data: any, syncedAt: string): Promis
 
   inMemoryDb = data;
   inMemoryTimestamp = syncedAt;
+
+  return supabaseOk;
 }
 
 export async function clearDatabase(env: Env): Promise<void> {

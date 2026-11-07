@@ -52,15 +52,19 @@ export default {
           const { data, clientTimestamp } = body || {};
           const syncedAt = new Date().toISOString();
 
+          let supabaseOk = false;
           if (data) {
-            await setDatabase(env, data, syncedAt);
+            supabaseOk = await setDatabase(env, data, syncedAt);
           }
 
           return jsonResponse({
             success: true,
+            supabaseOk,
             syncedAt,
             clientTimestamp,
-            message: 'Sinkronisasi awan berhasil diperbarui.',
+            message: supabaseOk
+              ? 'Sinkronisasi awan berhasil diperbarui.'
+              : 'Data disimpan tetapi Supabase tidak terkonfirmasi.',
           });
         } catch (error: any) {
           return jsonResponse({ error: error?.message || 'Gagal sinkronisasi awan' }, 500);

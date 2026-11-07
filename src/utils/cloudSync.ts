@@ -19,6 +19,34 @@ const LEGACY_STORAGE_KEYS = [
   'veritas_crm_state_v1',
 ];
 
+/**
+ * Normalize state to ensure all expected array/object keys exist.
+ * Prevents crashes when cloud data is missing newly added modules.
+ */
+export function normalizeState(raw: any): AppState {
+  return {
+    accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
+    deals: Array.isArray(raw.deals) ? raw.deals : [],
+    acts: Array.isArray(raw.acts) ? raw.acts : [],
+    mkt: Array.isArray(raw.mkt) ? raw.mkt : [],
+    quotes: Array.isArray(raw.quotes) ? raw.quotes : [],
+    labs: Array.isArray(raw.labs) ? raw.labs : [],
+    instr: Array.isArray(raw.instr) ? raw.instr : [],
+    insts: Array.isArray(raw.insts) ? raw.insts : [],
+    inv: Array.isArray(raw.inv) ? raw.inv : [],
+    fins: Array.isArray(raw.fins) ? raw.fins : [],
+    cat: Array.isArray(raw.cat) ? raw.cat : [],
+    log: Array.isArray(raw.log) ? raw.log : [],
+    settings: raw.settings && typeof raw.settings === 'object' && raw.settings.co ? raw.settings : undefined as any,
+    qcqa: raw.qcqa || { checks: {}, actions: [], gaps: {} },
+    users: Array.isArray(raw.users) ? raw.users : undefined,
+    procurements: Array.isArray(raw.procurements) ? raw.procurements : [],
+    deliveries: Array.isArray(raw.deliveries) ? raw.deliveries : [],
+    competencies: Array.isArray(raw.competencies) ? raw.competencies : [],
+    employees: Array.isArray(raw.employees) ? raw.employees : [],
+  };
+}
+
 export const clearAllLocalData = () => {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -91,6 +119,8 @@ export async function syncToCloud(state: AppState): Promise<{ success: boolean; 
   const start = performance.now();
   saveLocalState(state);
 
+  let workerSuccess = false;
+
   // 1. First attempt: Server API endpoint /api/sync
   try {
     const res = await fetch('/api/sync', {
@@ -104,38 +134,46 @@ export async function syncToCloud(state: AppState): Promise<{ success: boolean; 
 
     if (res.ok) {
       const data: any = await res.json();
-      const latencyMs = Math.round(performance.now() - start);
-      return {
-        success: true,
-        latencyMs: Math.max(12, latencyMs),
-        syncedAt: data.syncedAt || new Date().toISOString(),
-      };
+      // Check if the Worker actually confirmed Supabase write
+      if (data.supabaseOk !== false) {
+        workerSuccess = true;
+        const latencyMs = Math.round(performance.now() - start);
+        return {
+          success: true,
+          latencyMs: Math.max(12, latencyMs),
+          syncedAt: data.syncedAt || new Date().toISOString(),
+        };
+      }
+      // Worker responded but Supabase save failed – fall through to direct
     }
   } catch (apiErr) {
     // Fall through to direct Supabase client
   }
 
-  // 2. Second attempt: Direct Supabase client
-  try {
-    const now = new Date().toISOString();
-    const { error: supaErr } = await supabase
-      .from('app_state')
-      .upsert({
-        key: 'current',
-        data: state,
-        synced_at: now,
-      });
+  // 2. Second attempt: Direct Supabase client (always try if worker didn't confirm Supabase)
+  if (!workerSuccess) {
+    try {
+      const now = new Date().toISOString();
+      const { error: supaErr } = await supabase
+        .from('app_state')
+        .upsert({
+          key: 'current',
+          data: state,
+          synced_at: now,
+        });
 
-    if (!supaErr) {
-      const latencyMs = Math.round(performance.now() - start);
-      return {
-        success: true,
-        latencyMs: Math.max(15, latencyMs),
-        syncedAt: now,
-      };
+      if (!supaErr) {
+        const latencyMs = Math.round(performance.now() - start);
+        return {
+          success: true,
+          latencyMs: Math.max(15, latencyMs),
+          syncedAt: now,
+        };
+      }
+      console.warn('Direct Supabase upsert error:', supaErr.message);
+    } catch (supaEx) {
+      console.warn('Direct Supabase sync fallback error:', supaEx);
     }
-  } catch (supaEx) {
-    console.warn('Direct Supabase sync fallback error:', supaEx);
   }
 
   return {
@@ -146,22 +184,27 @@ export async function syncToCloud(state: AppState): Promise<{ success: boolean; 
   };
 }
 
-export async function fetchFromCloud(): Promise<{ hasData: boolean; data: AppState | null; syncedAt: string }> {
+export async function fetchFromCloud(): Promise<{ hasData: boolean; data: AppState | null; syncedAt: string; source?: string }> {
   // 1. First attempt: Server API endpoint /api/sync
   try {
     const res = await fetch('/api/sync');
     if (res.ok) {
       const json: any = await res.json();
       if (json.hasData && json.data) {
-        return {
-          hasData: true,
-          data: json.data,
-          syncedAt: json.syncedAt || new Date().toISOString(),
-        };
+        const normalized = normalizeState(json.data);
+        // Only accept cloud data if settings are valid (not seed/corrupted)
+        if (normalized.settings && normalized.settings.co) {
+          return {
+            hasData: true,
+            data: normalized,
+            syncedAt: json.syncedAt || new Date().toISOString(),
+            source: 'worker',
+          };
+        }
       }
     }
   } catch (apiErr) {
-    // Fall through to direct Supabase client
+    console.warn('Worker /api/sync fetch error:', apiErr);
   }
 
   // 2. Second attempt: Direct Supabase client
@@ -174,22 +217,27 @@ export async function fetchFromCloud(): Promise<{ hasData: boolean; data: AppSta
 
     if (!supaErr && supaRow && supaRow.data) {
       const parsed = typeof supaRow.data === 'string' ? JSON.parse(supaRow.data) : supaRow.data;
-      saveLocalState(parsed);
-      return {
-        hasData: true,
-        data: parsed,
-        syncedAt: supaRow.synced_at || new Date().toISOString(),
-      };
+      const normalized = normalizeState(parsed);
+      if (normalized.settings && normalized.settings.co) {
+        saveLocalState(normalized);
+        return {
+          hasData: true,
+          data: normalized,
+          syncedAt: supaRow.synced_at || new Date().toISOString(),
+          source: 'supabase-direct',
+        };
+      }
     }
   } catch (supaEx) {
     console.warn('Direct Supabase fetch fallback error:', supaEx);
   }
 
-  // 3. Fallback to localStorage
+  // 3. Fallback to localStorage (mark source so callers know it's stale)
   const local = loadLocalState();
   return {
     hasData: !!local,
     data: local,
     syncedAt: new Date().toISOString(),
+    source: 'local-fallback',
   };
 }

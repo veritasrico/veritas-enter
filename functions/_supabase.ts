@@ -5,11 +5,11 @@ let supabaseClient: SupabaseClient | null = null;
 
 export function getSupabase(env: Env): SupabaseClient | null {
   const url = (env as any).SUPABASE_URL || 'https://xirjwumegtyxwcullegn.supabase.co';
+  // Prefer anon/publishable key – the old secret key is unregistered and causes silent failures
   const key =
-    (env as any).SUPABASE_SECRET_KEY ||
     (env as any).SUPABASE_ANON_KEY ||
     (env as any).SUPABASE_PUBLISHABLE_KEY ||
-    'sb_secret_x37t_gHAS6SXUcUFRjPySw_1NWNVv_Y';
+    'sb_publishable_t0nyWbcf-v2kYZOlbq5ZCQ_FEdICTHf';
 
   if (!url || !key) return null;
   if (!supabaseClient) {
