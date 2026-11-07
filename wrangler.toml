@@ -12,10 +12,10 @@ directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
-[[d1_databases]]
-binding = "DB"
-database_name = "veritas_db"
-database_id = "veritas_db"
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "veritas_db"
+# database_id = "<your-d1-uuid-here>"
 
 [vars]
 # GEMINI_API_KEY = ""
