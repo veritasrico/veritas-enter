@@ -168,22 +168,28 @@ export default function App() {
 
   // Cloud sync push trigger
   const performCloudSync = useCallback(async (customState?: AppState) => {
+    isSyncingRef.current = true;
     setSyncStatus((prev) => ({ ...prev, status: 'syncing' }));
-    const toSync = customState || state;
-    const res = await syncToCloud(toSync);
-    if (res.success && res.syncedAt) {
-      lastKnownServerSyncRef.current = res.syncedAt;
+    try {
+      const toSync = customState || state;
+      const res = await syncToCloud(toSync);
+      if (res.success && res.syncedAt) {
+        lastKnownServerSyncRef.current = res.syncedAt;
+      }
+      setSyncStatus({
+        status: res.success ? 'synced' : 'error',
+        lastSyncedAt: res.syncedAt,
+        latencyMs: res.latencyMs,
+        message: res.success ? 'Tersinkronisasi ke Awan' : 'Koneksi lokal (offline)',
+      });
+    } finally {
+      isSyncingRef.current = false;
     }
-    setSyncStatus({
-      status: res.success ? 'synced' : 'error',
-      lastSyncedAt: res.syncedAt,
-      latencyMs: res.latencyMs,
-      message: res.success ? 'Tersinkronisasi ke Awan' : 'Koneksi lokal (offline)',
-    });
   }, [state]);
 
   // Manual immediate pull / check sync
   const handleManualSyncNow = async () => {
+    isSyncingRef.current = true;
     setSyncStatus((prev) => ({ ...prev, status: 'syncing' }));
     try {
       const cloud = await fetchFromCloud();
@@ -202,6 +208,8 @@ export default function App() {
       }
     } catch (e) {
       setSyncStatus((prev) => ({ ...prev, status: 'error', message: 'Koneksi bermasalah' }));
+    } finally {
+      isSyncingRef.current = false;
     }
   };
 
