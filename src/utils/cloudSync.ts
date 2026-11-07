@@ -1,4 +1,5 @@
 import { AppState } from '../types';
+import { supabase } from './supabase';
 
 export interface SyncStatus {
   status: 'synced' | 'syncing' | 'error' | 'offline';
@@ -88,8 +89,10 @@ export const saveLocalState = (state: AppState) => {
 
 export async function syncToCloud(state: AppState): Promise<{ success: boolean; latencyMs: number; syncedAt: string; error?: string }> {
   const start = performance.now();
+  saveLocalState(state);
+
+  // 1. First attempt: Server API endpoint /api/sync
   try {
-    saveLocalState(state);
     const res = await fetch('/api/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -99,45 +102,94 @@ export async function syncToCloud(state: AppState): Promise<{ success: boolean; 
       }),
     });
 
-    const latencyMs = Math.round(performance.now() - start);
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: Gagal menyinkronkan data`);
+    if (res.ok) {
+      const data: any = await res.json();
+      const latencyMs = Math.round(performance.now() - start);
+      return {
+        success: true,
+        latencyMs: Math.max(12, latencyMs),
+        syncedAt: data.syncedAt || new Date().toISOString(),
+      };
     }
-
-    const data = await res.json();
-    return {
-      success: true,
-      latencyMs: Math.max(12, latencyMs),
-      syncedAt: data.syncedAt || new Date().toISOString(),
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      latencyMs: Math.round(performance.now() - start),
-      syncedAt: new Date().toISOString(),
-      error: err?.message || 'Koneksi awan terputus',
-    };
+  } catch (apiErr) {
+    // Fall through to direct Supabase client
   }
+
+  // 2. Second attempt: Direct Supabase client
+  try {
+    const now = new Date().toISOString();
+    const { error: supaErr } = await supabase
+      .from('app_state')
+      .upsert({
+        key: 'current',
+        data: state,
+        synced_at: now,
+      });
+
+    if (!supaErr) {
+      const latencyMs = Math.round(performance.now() - start);
+      return {
+        success: true,
+        latencyMs: Math.max(15, latencyMs),
+        syncedAt: now,
+      };
+    }
+  } catch (supaEx) {
+    console.warn('Direct Supabase sync fallback error:', supaEx);
+  }
+
+  return {
+    success: false,
+    latencyMs: Math.round(performance.now() - start),
+    syncedAt: new Date().toISOString(),
+    error: 'Koneksi basis data terputus',
+  };
 }
 
 export async function fetchFromCloud(): Promise<{ hasData: boolean; data: AppState | null; syncedAt: string }> {
+  // 1. First attempt: Server API endpoint /api/sync
   try {
     const res = await fetch('/api/sync');
-    if (!res.ok) throw new Error('Gagal mengambil data awan');
-    const json = await res.json();
-    return {
-      hasData: !!json.hasData && !!json.data,
-      data: json.data,
-      syncedAt: json.syncedAt,
-    };
-  } catch (err) {
-    console.warn('Fallback to local storage:', err);
-    const local = loadLocalState();
-    return {
-      hasData: !!local,
-      data: local,
-      syncedAt: new Date().toISOString(),
-    };
+    if (res.ok) {
+      const json: any = await res.json();
+      if (json.hasData && json.data) {
+        return {
+          hasData: true,
+          data: json.data,
+          syncedAt: json.syncedAt || new Date().toISOString(),
+        };
+      }
+    }
+  } catch (apiErr) {
+    // Fall through to direct Supabase client
   }
+
+  // 2. Second attempt: Direct Supabase client
+  try {
+    const { data: supaRow, error: supaErr } = await supabase
+      .from('app_state')
+      .select('data, synced_at')
+      .eq('key', 'current')
+      .maybeSingle();
+
+    if (!supaErr && supaRow && supaRow.data) {
+      const parsed = typeof supaRow.data === 'string' ? JSON.parse(supaRow.data) : supaRow.data;
+      saveLocalState(parsed);
+      return {
+        hasData: true,
+        data: parsed,
+        syncedAt: supaRow.synced_at || new Date().toISOString(),
+      };
+    }
+  } catch (supaEx) {
+    console.warn('Direct Supabase fetch fallback error:', supaEx);
+  }
+
+  // 3. Fallback to localStorage
+  const local = loadLocalState();
+  return {
+    hasData: !!local,
+    data: local,
+    syncedAt: new Date().toISOString(),
+  };
 }

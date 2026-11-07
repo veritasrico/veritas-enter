@@ -53,7 +53,7 @@ export async function sendWaNotice(payload: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return await res.json();
+    return (await res.json()) as any;
   } catch (err: any) {
     console.warn('WA backend fallback:', err);
     return {

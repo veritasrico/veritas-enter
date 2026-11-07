@@ -20,7 +20,7 @@ export async function fetchAiAnalytics(state: AppState, month?: string): Promise
       throw new Error(`HTTP ${res.status}: Gagal memproses analitik AI`);
     }
 
-    const json = await res.json();
+    const json: any = await res.json();
     return {
       success: true,
       data: json.data,
