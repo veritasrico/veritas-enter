@@ -44,6 +44,7 @@ import { SlideModal } from './components/SlideModal';
 import { MobileDeviceFrame } from './components/MobileDeviceFrame';
 import { MobileMenuModal } from './components/MobileMenuModal';
 import { UserAccountModal, ActiveUser } from './components/UserAccountModal';
+import { LoginScreen } from './components/LoginScreen';
 import { ShareAccessModal } from './components/ShareAccessModal';
 import { ExcelExportModal } from './components/ExcelExportModal';
 import { ExcelImportModal, ImportableModule } from './components/ExcelImportModal';
@@ -83,27 +84,23 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<TabKey>('dash');
 
   // Active user on this specific laptop/browser session
-  const [currentUser, setCurrentUser] = useState<ActiveUser>(() => {
+  const [currentUser, setCurrentUser] = useState<ActiveUser | null>(() => {
     try {
-      const saved = localStorage.getItem('veritas_active_user');
+      const saved = sessionStorage.getItem('veritas_active_session');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.allowedTabs && Array.isArray(parsed.allowedTabs)) {
-          if (!parsed.allowedTabs.includes('insts')) parsed.allowedTabs.push('insts');
-          if (!parsed.allowedTabs.includes('cat')) parsed.allowedTabs.push('cat');
+        if (parsed && parsed.u && parsed.role) {
+          if (parsed.allowedTabs && Array.isArray(parsed.allowedTabs)) {
+            if (!parsed.allowedTabs.includes('insts')) parsed.allowedTabs.push('insts');
+            if (!parsed.allowedTabs.includes('cat')) parsed.allowedTabs.push('cat');
+          }
+          return parsed;
         }
-        return parsed;
       }
     } catch (e) {
       console.warn('Failed to parse saved user:', e);
     }
-    return {
-      u: 'ricoh',
-      role: 'admin',
-      name: 'Ricoh Sutrisno',
-      department: 'Laboratory Manager / GM',
-      allowedTabs: DEFAULT_MANAGED_USERS[0].allowedTabs,
-    };
+    return null;
   });
 
   // 2. Viewport Mode: Web vs Mobile Device
@@ -273,8 +270,8 @@ export default function App() {
         const newLog: LogEntry = {
           id: uid(),
           ts: Date.now(),
-          user: currentUser.u,
-          role: currentUser.role,
+          user: currentUser?.u || 'sistem',
+          role: currentUser?.role || 'admin',
           action,
           mod,
           ref,
@@ -563,7 +560,7 @@ export default function App() {
 
   // Reset / Clear all data handler (Khusus Admin - via AdminConfirmModal)
   const handleResetAllData = () => {
-    if (currentUser.role !== 'admin') {
+    if (!currentUser || currentUser.role !== 'admin') {
       alert('Akses Terbatas: Hanya Admin yang dapat mengosongkan seluruh data sistem.');
       return;
     }
@@ -603,8 +600,8 @@ export default function App() {
             {
               id: uid(),
               ts: Date.now(),
-              user: currentUser.u || 'admin',
-              role: currentUser.role || 'admin',
+              user: currentUser?.u || 'admin',
+              role: currentUser?.role || 'admin',
               action: 'Hapus',
               mod: 'Sistem',
               ref: 'Kosongkan Semua Data',
@@ -626,7 +623,7 @@ export default function App() {
 
   // Clear Log Book history handler (Khusus Admin - via AdminConfirmModal)
   const handleClearLogs = () => {
-    if (currentUser.role !== 'admin') {
+    if (!currentUser || currentUser.role !== 'admin') {
       alert('Akses Terbatas: Hanya Admin yang dapat menghapus riwayat audit trail Log Book.');
       return;
     }
@@ -643,8 +640,8 @@ export default function App() {
           {
             id: uid(),
             ts: Date.now(),
-            user: currentUser.u || 'admin',
-            role: currentUser.role || 'admin',
+            user: currentUser?.u || 'admin',
+            role: currentUser?.role || 'admin',
             action: 'Hapus',
             mod: 'Log Book',
             ref: 'History Log Book Dibersihkan',
@@ -678,7 +675,7 @@ export default function App() {
     });
 
     // If updating current active user on this laptop, refresh permissions immediately
-    if (user.username === currentUser.u) {
+    if (currentUser && user.username === currentUser.u) {
       const updatedActive: ActiveUser = {
         u: user.username,
         name: user.name,
@@ -735,6 +732,7 @@ export default function App() {
 
   // Active View Renderer shared between Web View & Mobile Simulator
   const renderActiveView = () => {
+    if (!currentUser) return null;
     // Role-based access restriction check (admin always has unrestricted access)
     if (
       currentUser.role !== 'admin' &&
@@ -1317,12 +1315,39 @@ export default function App() {
   const handleSelectUser = (user: ActiveUser) => {
     setCurrentUser(user);
     try {
+      sessionStorage.setItem('veritas_active_session', JSON.stringify(user));
       localStorage.setItem('veritas_active_user', JSON.stringify(user));
     } catch (e) {
       console.warn('Failed to save active user:', e);
     }
+    if (user.role !== 'admin' && user.allowedTabs && user.allowedTabs.length > 0) {
+      if (!user.allowedTabs.includes(currentTab)) {
+        setCurrentTab(user.allowedTabs[0]);
+      }
+    }
+    setIsUserModalOpen(false);
     addLogEntry('Ubah', 'Sistem & Pengguna', user.name, `Pengguna laptop ini beralih ke peran ${user.role} (${user.department || '-'})`);
   };
+
+  const handleLogout = () => {
+    try {
+      sessionStorage.removeItem('veritas_active_session');
+      localStorage.removeItem('veritas_active_user');
+    } catch (e) {}
+    setCurrentUser(null);
+    setIsUserModalOpen(false);
+  };
+
+  // If no user is logged in, show full screen Login & Account Selection with PIN protection
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        users={usersList}
+        syncStatus={syncStatus}
+        onLogin={handleSelectUser}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen flex-col bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 overflow-hidden font-sans">
@@ -1343,9 +1368,7 @@ export default function App() {
         onOpenUserModal={() => setIsUserModalOpen(true)}
         onOpenShareModal={() => setIsShareModalOpen(true)}
         onOpenExcelExport={() => setIsExcelModalOpen(true)}
-        onLogout={() => {
-          setIsUserModalOpen(true);
-        }}
+        onLogout={handleLogout}
       />
 
       {/* Main View Area: Conditionally Renders Web View or Mobile Device Simulator */}
@@ -1463,6 +1486,7 @@ export default function App() {
         managedUsers={usersList}
         onSelectUser={handleSelectUser}
         onOpenManageUsers={() => setCurrentTab('users')}
+        onLogout={handleLogout}
         onClose={() => setIsUserModalOpen(false)}
       />
 

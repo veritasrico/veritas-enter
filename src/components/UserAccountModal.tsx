@@ -10,6 +10,7 @@ import {
   FlaskConical,
   Calculator,
   ShieldCheck,
+  Megaphone,
   Lock,
   KeyRound,
   ArrowRight,
@@ -31,6 +32,7 @@ interface UserAccountModalProps {
   managedUsers?: ManagedUserAccount[];
   onSelectUser: (user: ActiveUser) => void;
   onOpenManageUsers?: () => void;
+  onLogout?: () => void;
   onClose: () => void;
 }
 
@@ -40,6 +42,7 @@ export const UserAccountModal: React.FC<UserAccountModalProps> = ({
   managedUsers = [],
   onSelectUser,
   onOpenManageUsers,
+  onLogout,
   onClose,
 }) => {
   const [pinPromptUser, setPinPromptUser] = useState<ManagedUserAccount | null>(null);
@@ -84,14 +87,18 @@ export const UserAccountModal: React.FC<UserAccountModalProps> = ({
     switch (role) {
       case 'admin':
         return <span className="rounded bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">ADMIN</span>;
-      case 'sales':
-        return <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">SALES</span>;
-      case 'lab':
-        return <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">LAB</span>;
       case 'finance':
         return <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">FINANCE</span>;
+      case 'sales':
+        return <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">SALES</span>;
+      case 'marketing':
+        return <span className="rounded bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">MARKETING</span>;
+      case 'lab':
+        return <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">LAB</span>;
+      case 'mutu':
+        return <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">MUTU &amp; ISO</span>;
       default:
-        return <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{role.toUpperCase()}</span>;
+        return <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{String(role).toUpperCase()}</span>;
     }
   };
 
@@ -99,12 +106,14 @@ export const UserAccountModal: React.FC<UserAccountModalProps> = ({
     switch (role) {
       case 'admin':
         return <ShieldCheck className="h-4 w-4 text-rose-600" />;
-      case 'sales':
-        return <Briefcase className="h-4 w-4 text-blue-600" />;
-      case 'lab':
-        return <FlaskConical className="h-4 w-4 text-emerald-600" />;
       case 'finance':
         return <Calculator className="h-4 w-4 text-amber-600" />;
+      case 'sales':
+        return <Briefcase className="h-4 w-4 text-blue-600" />;
+      case 'marketing':
+        return <Megaphone className="h-4 w-4 text-purple-600" />;
+      case 'lab':
+        return <FlaskConical className="h-4 w-4 text-emerald-600" />;
       default:
         return <User className="h-4 w-4 text-slate-600" />;
     }
@@ -289,13 +298,27 @@ export const UserAccountModal: React.FC<UserAccountModalProps> = ({
 
         {/* Modal Footer */}
         <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-          <span>Identitas dan izin modul disimpan lokal di browser laptop ini.</span>
-          <button
-            onClick={onClose}
-            className="font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300"
-          >
-            Tutup
-          </button>
+          <span className="truncate pr-2">Akun, hak akses, dan PIN keamanan tersinkronisasi terpusat dengan cloud database Supabase.</span>
+          <div className="flex items-center gap-3 shrink-0">
+            {onLogout && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onLogout();
+                }}
+                className="font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 transition"
+              >
+                Keluar (Logout)
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
     </div>
