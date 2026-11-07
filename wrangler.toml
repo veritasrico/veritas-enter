@@ -1,0 +1,25 @@
+name = "veritas-enter"
+main = "worker.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[build]
+command = "npm install --legacy-peer-deps && npm run build"
+watch_dir = "src"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "veritas_db"
+database_id = "veritas_db"
+
+[vars]
+# GEMINI_API_KEY = ""
+SUPABASE_URL = "https://xirjwumegtyxwcullegn.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_t0nyWbcf-v2kYZOlbq5ZCQ_FEdICTHf"
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_t0nyWbcf-v2kYZOlbq5ZCQ_FEdICTHf"
+SUPABASE_SECRET_KEY = "sb_secret_x37t_gHAS6SXUcUFRjPySw_1NWNVv_Y"
