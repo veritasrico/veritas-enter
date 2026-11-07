@@ -7,3 +7,5 @@ coverage/
 .env*
 !.env.example
 .aistudio/
+.wrangler/
+cloud_db_store.json
