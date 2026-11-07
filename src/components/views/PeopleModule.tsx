@@ -386,7 +386,7 @@ export const PeopleModule: React.FC<PeopleModuleProps> = ({
           <div className="mt-1 text-lg font-black text-indigo-800 dark:text-indigo-300">
             {k3Count + bnspCount} Personel
           </div>
-          <span className="text-[10px] text-indigo-600">K3 &amp; BNSP Terkualifikasi</span>
+          <span className="text-[10px] text-indigo-600">Terkualifikasi</span>
         </div>
       </div>
 

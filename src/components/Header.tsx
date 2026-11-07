@@ -13,6 +13,9 @@ import {
   User,
   Users,
   FileSpreadsheet,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { SyncStatus } from '../utils/cloudSync';
 import { AppNotification, Role } from '../types';
@@ -24,6 +27,8 @@ interface HeaderProps {
   syncStatus: SyncStatus;
   notifications: AppNotification[];
   viewportMode: 'web' | 'mobile';
+  selectedYear?: number;
+  onYearChange?: (year: number) => void;
   onToggleViewportMode: (mode: 'web' | 'mobile') => void;
   onSyncNow: () => void;
   onOpenNotifications: () => void;
@@ -41,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   syncStatus,
   notifications,
   viewportMode,
+  selectedYear,
+  onYearChange,
   onToggleViewportMode,
   onSyncNow,
   onOpenNotifications,
@@ -121,6 +128,32 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="sm:hidden">Mobile</span>
         </button>
       </div>
+
+      {/* Kontrol Navigasi Tahun Terpadu < [ Tahun 2026 ] > */}
+      {selectedYear !== undefined && onYearChange && (
+        <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/90 p-0.5 shadow-xs dark:border-slate-700 dark:bg-slate-800 shrink-0">
+          <button
+            type="button"
+            onClick={() => onYearChange(selectedYear - 1)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white transition"
+            title={`Tahun Sebelumnya (${selectedYear - 1})`}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <div className="flex items-center gap-1.5 px-2 text-xs font-bold text-slate-800 dark:text-white">
+            <Calendar className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="tabular-nums">Tahun {selectedYear}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onYearChange(selectedYear + 1)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white transition"
+            title={`Tahun Berikutnya (${selectedYear + 1})`}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Action Toolbar */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">

@@ -1324,6 +1324,8 @@ export default function App() {
         syncStatus={syncStatus}
         notifications={notifications}
         viewportMode={viewportMode}
+        selectedYear={calendarYear}
+        onYearChange={setCalendarYear}
         onToggleViewportMode={(mode) => setViewportMode(mode)}
         onSyncNow={handleManualSyncNow}
         onOpenNotifications={() => setIsNotifDrawerOpen(true)}

@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { ManagedUserAccount, Role, TabKey } from '../../types';
 import { ALL_SYSTEM_TABS, uid } from '../../utils/seedData';
+import { DataTablePagination } from '../common/DataTablePagination';
+import { usePagination } from '../common/usePagination';
 
 interface UserManagementViewProps {
   users: ManagedUserAccount[];
@@ -30,29 +32,32 @@ interface UserManagementViewProps {
   onToggleStatus: (id: string) => void;
 }
 
+const ALL_SYSTEM_KEYS: TabKey[] = ALL_SYSTEM_TABS.map((t) => t.key);
+
 const ROLE_TEMPLATES: Record<Role, { label: string; tabs: TabKey[] }> = {
   admin: {
-    label: 'Akses Penuh (Administrator)',
-    tabs: [
-      'dash', 'ai_analytics', 'cal', 'accounts', 'deals', 'acts', 'mkt', 'quote', 'cat',
-      'labdash', 'lab', 'qcqa', 'insts', 'instr', 'inv', 'fin', 'monthly_report', 'slide_export', 'log', 'set', 'users'
-    ],
-  },
-  sales: {
-    label: 'Divisi Sales & Komersial',
-    tabs: ['dash', 'cal', 'accounts', 'deals', 'acts', 'mkt', 'quote', 'cat'],
-  },
-  lab: {
-    label: 'Analis Laboratorium',
-    tabs: ['dash', 'cal', 'labdash', 'lab', 'qcqa', 'insts', 'instr', 'inv'],
+    label: 'Administrator (Akses Penuh Seluruh Sistem)',
+    tabs: [...ALL_SYSTEM_KEYS],
   },
   finance: {
-    label: 'Finance & Faktur',
-    tabs: ['dash', 'cal', 'quote', 'fin', 'monthly_report'],
+    label: 'Finance & Keuangan (Akses Penuh spt Admin)',
+    tabs: [...ALL_SYSTEM_KEYS],
+  },
+  lab: {
+    label: 'Analis Laboratorium (Akses Terbatas)',
+    tabs: ['cal', 'labdash', 'lab', 'insts', 'instr', 'inv', 'sample_logistics'],
+  },
+  sales: {
+    label: 'Sales & CRM (Akses Terbatas)',
+    tabs: ['cal', 'accounts', 'deals', 'quote', 'cat', 'acts'],
   },
   marketing: {
-    label: 'Digital Marketing & Kampanye',
-    tabs: ['dash', 'cal', 'accounts', 'deals', 'mkt', 'quote', 'cat'],
+    label: 'Digital Marketing & Pertumbuhan (Akses Terbatas)',
+    tabs: ['cal', 'accounts', 'deals', 'mkt'],
+  },
+  mutu: {
+    label: 'Penjaminan Mutu & ISO 17025 (Akses Terbatas)',
+    tabs: ['cal', 'qcqa', 'insts', 'instr', 'competency', 'labdash'],
   },
 };
 
@@ -155,21 +160,34 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     return matchSearch && matchRole;
   });
 
+  const {
+    currentPage,
+    pageSize,
+    totalItems,
+    paginatedItems: paginatedUsers,
+    setCurrentPage,
+    setPageSize,
+  } = usePagination(filteredUsers, 10);
+
   // Group tabs by section for modal rendering
   const tabGroups = Array.from(new Set(ALL_SYSTEM_TABS.map((t) => t.group)));
 
   const getRoleBadge = (role: Role) => {
     switch (role) {
       case 'admin':
-        return <span className="rounded bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">ADMIN</span>;
+        return <span className="rounded bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">ADMIN (FULL)</span>;
+      case 'finance':
+        return <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">FINANCE (FULL)</span>;
       case 'sales':
         return <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">SALES</span>;
+      case 'marketing':
+        return <span className="rounded bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">MARKETING</span>;
       case 'lab':
-        return <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">LAB</span>;
-      case 'finance':
-        return <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">FINANCE</span>;
+        return <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">LAB ANALYST</span>;
+      case 'mutu':
+        return <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">MUTU &amp; ISO</span>;
       default:
-        return <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{role.toUpperCase()}</span>;
+        return <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{String(role).toUpperCase()}</span>;
     }
   };
 
@@ -244,14 +262,14 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredUsers.length === 0 ? (
+              {paginatedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-slate-400">
                     Tidak ada akun pengguna yang cocok dengan kriteria pencarian.
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => {
+                paginatedUsers.map((u) => {
                   const isCurrent = currentUser.u === u.username;
                   return (
                     <tr
@@ -360,6 +378,14 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               )}
             </tbody>
           </table>
+          <DataTablePagination
+            totalItems={totalItems}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            itemName="pengguna"
+          />
         </div>
       </div>
 
@@ -438,11 +464,12 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                     }}
                     className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white font-medium"
                   >
-                    <option value="admin">Administrator (Admin)</option>
-                    <option value="sales">Sales &amp; Komersial</option>
-                    <option value="lab">Analis Laboratorium</option>
-                    <option value="finance">Finance &amp; Faktur</option>
-                    <option value="marketing">Digital Marketing</option>
+                    <option value="admin">Administrator (Admin - Akses Penuh)</option>
+                    <option value="finance">Finance &amp; Keuangan (Akses Penuh spt Admin)</option>
+                    <option value="sales">Sales &amp; Komersial (Akses Terbatas)</option>
+                    <option value="marketing">Digital Marketing (Akses Terbatas)</option>
+                    <option value="lab">Analis Laboratorium (Akses Terbatas)</option>
+                    <option value="mutu">Penjaminan Mutu &amp; ISO 17025 (Akses Terbatas)</option>
                   </select>
                 </div>
 

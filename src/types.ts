@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'sales' | 'marketing' | 'lab' | 'finance';
+export type Role = 'admin' | 'sales' | 'marketing' | 'lab' | 'finance' | 'mutu';
 
 export type TabKey =
   | 'dash'
