@@ -22,4 +22,5 @@ not_found_handling = "single-page-application"
 SUPABASE_URL = "https://xirjwumegtyxwcullegn.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_t0nyWbcf-v2kYZOlbq5ZCQ_FEdICTHf"
 SUPABASE_PUBLISHABLE_KEY = "sb_publishable_t0nyWbcf-v2kYZOlbq5ZCQ_FEdICTHf"
+# SUPABASE_SECRET_KEY → set via `npx wrangler secret put SUPABASE_SECRET_KEY` (not committed to repo)
 
