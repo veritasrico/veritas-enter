@@ -1,5 +1,6 @@
 import { AppState } from '../types';
 import { supabase } from './supabase';
+import { getInitialSeed } from './seedData';
 
 export interface SyncStatus {
   status: 'synced' | 'syncing' | 'error' | 'offline';
@@ -20,10 +21,15 @@ const LEGACY_STORAGE_KEYS = [
 ];
 
 /**
- * Normalize state to ensure all expected array/object keys exist.
- * Prevents crashes when cloud data is missing newly added modules.
+ * Robustly normalizes state to ensure all expected array/object keys exist.
+ * Preserves user data while protecting against undefined crashes.
  */
 export function normalizeState(raw: any): AppState {
+  const seed = getInitialSeed();
+  if (!raw || typeof raw !== 'object') {
+    return seed;
+  }
+
   return {
     accounts: Array.isArray(raw.accounts) ? raw.accounts : [],
     deals: Array.isArray(raw.deals) ? raw.deals : [],
@@ -32,18 +38,41 @@ export function normalizeState(raw: any): AppState {
     quotes: Array.isArray(raw.quotes) ? raw.quotes : [],
     labs: Array.isArray(raw.labs) ? raw.labs : [],
     instr: Array.isArray(raw.instr) ? raw.instr : [],
-    insts: Array.isArray(raw.insts) ? raw.insts : [],
+    insts: Array.isArray(raw.insts) && raw.insts.length > 0 ? raw.insts : seed.insts,
     inv: Array.isArray(raw.inv) ? raw.inv : [],
     fins: Array.isArray(raw.fins) ? raw.fins : [],
-    cat: Array.isArray(raw.cat) ? raw.cat : [],
+    cat: Array.isArray(raw.cat) && raw.cat.length > 0 ? raw.cat : seed.cat,
     log: Array.isArray(raw.log) ? raw.log : [],
-    settings: raw.settings && typeof raw.settings === 'object' && raw.settings.co ? raw.settings : undefined as any,
-    qcqa: raw.qcqa || { checks: {}, actions: [], gaps: {} },
-    users: Array.isArray(raw.users) ? raw.users : undefined,
-    procurements: Array.isArray(raw.procurements) ? raw.procurements : [],
-    deliveries: Array.isArray(raw.deliveries) ? raw.deliveries : [],
-    competencies: Array.isArray(raw.competencies) ? raw.competencies : [],
-    employees: Array.isArray(raw.employees) ? raw.employees : [],
+    qcqa: raw.qcqa && typeof raw.qcqa === 'object' ? raw.qcqa : seed.qcqa,
+    users: Array.isArray(raw.users) && raw.users.length > 0 ? raw.users : seed.users,
+    procurements: Array.isArray(raw.procurements) ? raw.procurements : (seed.procurements || []),
+    deliveries: Array.isArray(raw.deliveries) ? raw.deliveries : (seed.deliveries || []),
+    competencies: Array.isArray(raw.competencies) ? raw.competencies : (seed.competencies || []),
+    employees: Array.isArray(raw.employees) ? raw.employees : (seed.employees || []),
+    settings: {
+      ...seed.settings,
+      ...(raw.settings || {}),
+      co: {
+        ...seed.settings.co,
+        ...(raw.settings?.co || {}),
+        name: raw.settings?.co?.name || seed.settings.co.name,
+        signer: raw.settings?.co?.signer || seed.settings.co.signer,
+        title: raw.settings?.co?.title || seed.settings.co.title,
+        addr: raw.settings?.co?.addr || seed.settings.co.addr,
+        phone: raw.settings?.co?.phone || seed.settings.co.phone,
+        email: raw.settings?.co?.email || seed.settings.co.email,
+        logo: raw.settings?.co?.logo || seed.settings.co.logo,
+      },
+      int: {
+        ...seed.settings.int,
+        ...(raw.settings?.int || {}),
+        wa: {
+          ...seed.settings.int.wa,
+          ...(raw.settings?.int?.wa || {}),
+        },
+      },
+      waNumber: raw.settings?.waNumber || seed.settings.waNumber,
+    },
   };
 }
 

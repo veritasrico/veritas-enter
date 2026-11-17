@@ -68,119 +68,153 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
     }
 
     // 2. Also sync relational accounts
-    if (Array.isArray(data.accounts) && data.accounts.length > 0) {
+    const validAccIds = new Set<string>();
+    if (Array.isArray(data.accounts)) {
       try {
-        const records = data.accounts.map((a: any) => ({
-          id: a.id,
-          name: a.name || '',
-          pic: a.pic || '',
-          industry: a.industry || '',
-          email: a.email || '',
-          phone: a.phone || '',
-          source: a.source || '',
-          addr: a.addr || '',
-          notes: a.notes || '',
-          last_contact_date: a.lastContactDate || '',
-          referral_status: a.referralStatus || '',
-        }));
-        await client.from('accounts').upsert(records);
+        if (data.accounts.length > 0) {
+          const records = data.accounts.map((a: any) => ({
+            id: a.id,
+            name: a.name || '',
+            pic: a.pic || '',
+            industry: a.industry || '',
+            email: a.email || '',
+            phone: a.phone || '',
+            source: a.source || '',
+            addr: a.addr || '',
+            notes: a.notes || '',
+            last_contact_date: a.lastContactDate || '',
+            referral_status: a.referralStatus || '',
+          }));
+          await client.from('accounts').upsert(records);
+          const ids = records.map((a: any) => a.id);
+          await client.from('accounts').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+          ids.forEach((id: string) => validAccIds.add(id));
+        } else {
+          await client.from('accounts').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Accounts table sync warning:', e);
       }
     }
 
     // 3. Also sync relational deals
-    if (Array.isArray(data.deals) && data.deals.length > 0) {
+    const validDealIds = new Set<string>();
+    if (Array.isArray(data.deals)) {
       try {
-        const records = data.deals.map((d: any) => ({
-          id: d.id,
-          title: d.title || '',
-          acc_id: d.accId || null,
-          value: Number(d.value) || 0,
-          stage: d.stage || 'Lead',
-          owner: d.owner || '',
-          close_date: d.close || '',
-          probability: Number(d.probability) || 0,
-          service_status: d.serviceStatus || 'Normal',
-          service_closed_note: d.serviceClosedNote || '',
-          closed_from: d.closedFrom || '',
-          closed_until: d.closedUntil || '',
-        }));
-        await client.from('deals').upsert(records);
+        if (data.deals.length > 0) {
+          const records = data.deals.map((d: any) => ({
+            id: d.id,
+            title: d.title || '',
+            acc_id: validAccIds.has(d.accId) ? d.accId : null,
+            value: Number(d.value) || 0,
+            stage: d.stage || 'Lead',
+            owner: d.owner || '',
+            close_date: d.close || '',
+            probability: Number(d.probability) || 0,
+            service_status: d.serviceStatus || 'Normal',
+            service_closed_note: d.serviceClosedNote || '',
+            closed_from: d.closedFrom || '',
+            closed_until: d.closedUntil || '',
+          }));
+          await client.from('deals').upsert(records);
+          const ids = records.map((d: any) => d.id);
+          await client.from('deals').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+          ids.forEach((id: string) => validDealIds.add(id));
+        } else {
+          await client.from('deals').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Deals table sync warning:', e);
       }
     }
 
     // 4. Also sync relational lab work orders (supports both TypeScript model and schema.sql)
-    if (Array.isArray(data.labs) && data.labs.length > 0) {
+    const validLabIds = new Set<string>();
+    if (Array.isArray(data.labs)) {
       try {
-        const records = data.labs.map((l: any) => ({
-          id: l.id,
-          sid: l.sid || '',
-          acc_id: l.accId || null,
-          date: l.date || '',
-          target_date: l.completionDate || l.targetDate || '',
-          service: l.service || '',
-          sample_name: l.sampleName || l.service || '',
-          masuk: Number(l.masuk) || 1,
-          analisa: Number(l.analisa) || 0,
-          sisa: typeof l.sisa === 'number' ? l.sisa : ((Number(l.masuk) || 1) - (Number(l.analisa) || 0)),
-          status: l.serviceStatus || l.status || 'Antrean',
-          analyst: l.analyst || '',
-          note: l.note || '',
-        }));
-        await client.from('lab_work_orders').upsert(records);
+        if (data.labs.length > 0) {
+          const records = data.labs.map((l: any) => ({
+            id: l.id,
+            sid: l.sid || '',
+            acc_id: validAccIds.has(l.accId) ? l.accId : null,
+            date: l.date || '',
+            target_date: l.completionDate || l.targetDate || '',
+            service: l.service || '',
+            sample_name: l.sampleName || l.service || '',
+            masuk: Number(l.masuk) || 1,
+            analisa: Number(l.analisa) || 0,
+            sisa: typeof l.sisa === 'number' ? l.sisa : ((Number(l.masuk) || 1) - (Number(l.analisa) || 0)),
+            status: l.serviceStatus || l.status || 'Antrean',
+            analyst: l.analyst || '',
+            note: l.note || '',
+          }));
+          await client.from('lab_work_orders').upsert(records);
+          const ids = records.map((l: any) => l.id);
+          await client.from('lab_work_orders').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+          ids.forEach((id: string) => validLabIds.add(id));
+        } else {
+          await client.from('lab_work_orders').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Lab work orders table sync warning:', e);
       }
     }
 
     // 5. Also sync relational invoices
-    if (Array.isArray(data.fins) && data.fins.length > 0) {
+    if (Array.isArray(data.fins)) {
       try {
-        const records = data.fins.map((f: any) => ({
-          id: f.id,
-          no: f.no || '',
-          acc_id: f.accId || null,
-          deal_id: f.dealId || null,
-          lab_id: f.labId || null,
-          quote_id: f.quoteId || null,
-          sample_sid: f.sampleSid || null,
-          po: f.po || '',
-          date: f.date || '',
-          due: f.due || '',
-          amount: Number(f.amount) || 0,
-          paid: Number(f.paid) || 0,
-          ppn: Number(f.ppn) || 0,
-          perihal: f.perihal || '',
-          note: f.note || '',
-          sent_at: f.sentAt || '',
-          items: f.items || [],
-        }));
-        await client.from('invoices').upsert(records);
+        if (data.fins.length > 0) {
+          const records = data.fins.map((f: any) => ({
+            id: f.id,
+            no: f.no || '',
+            acc_id: validAccIds.has(f.accId) ? f.accId : null,
+            deal_id: validDealIds.has(f.dealId) ? f.dealId : null,
+            lab_id: validLabIds.has(f.labId) ? f.labId : null,
+            quote_id: null,
+            sample_sid: f.sampleSid || null,
+            po: f.po || '',
+            date: f.date || '',
+            due: f.due || '',
+            amount: Number(f.amount) || 0,
+            paid: Number(f.paid) || 0,
+            ppn: Number(f.ppn) || 0,
+            perihal: f.perihal || '',
+            note: f.note || '',
+            sent_at: f.sentAt || '',
+            items: f.items || [],
+          }));
+          await client.from('invoices').upsert(records);
+          const ids = records.map((f: any) => f.id);
+          await client.from('invoices').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        } else {
+          await client.from('invoices').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Invoices table sync warning:', e);
       }
     }
 
     // 6. Also sync relational instruments
-    if (Array.isArray(data.insts) && data.insts.length > 0) {
+    if (Array.isArray(data.insts)) {
       try {
-        const records = data.insts.map((i: any) => ({
-          id: i.id,
-          name: i.name || '',
-          brand: i.brand || '',
-          pic: i.pic || '',
-          target: Number(i.target) || 10,
-          ops: Number(i.ops) || 8,
-          int_days: Number(i.int) || 365,
-          last_cal: i.last || '',
-          pm_int_days: Number(i.pmInt) || 180,
-          pm_last: i.pmLast || '',
-          note: i.note || '',
-        }));
-        await client.from('instruments').upsert(records);
+        if (data.insts.length > 0) {
+          const records = data.insts.map((i: any) => ({
+            id: i.id,
+            name: i.name || '',
+            brand: i.brand || '',
+            pic: i.pic || '',
+            target: Number(i.target) || 10,
+            ops: Number(i.ops) || 8,
+            int_days: Number(i.int) || 365,
+            last_cal: i.last || '',
+            pm_int_days: Number(i.pmInt) || 180,
+            pm_last: i.pmLast || '',
+            note: i.note || '',
+          }));
+          await client.from('instruments').upsert(records);
+          const ids = records.map((i: any) => i.id);
+          await client.from('instruments').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        }
       } catch (e) {
         console.warn('Instruments table sync warning:', e);
       }
@@ -282,122 +316,158 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
     }
 
     // 11. Also sync relational activities
-    if (Array.isArray(data.acts) && data.acts.length > 0) {
+    if (Array.isArray(data.acts)) {
       try {
-        const records = data.acts.map((a: any) => ({
-          id: a.id,
-          acc_id: a.accId || null,
-          type: a.type || 'Telepon',
-          date: a.date || '',
-          status: a.status || 'Terjadwal',
-          note: a.note || '',
-        }));
-        await client.from('activities').upsert(records);
+        if (data.acts.length > 0) {
+          const records = data.acts.map((a: any) => ({
+            id: a.id,
+            acc_id: validAccIds.has(a.accId) ? a.accId : null,
+            type: a.type || 'Telepon',
+            date: a.date || '',
+            status: a.status || 'Terjadwal',
+            note: a.note || '',
+          }));
+          await client.from('activities').upsert(records);
+          const ids = records.map((a: any) => a.id);
+          await client.from('activities').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        } else {
+          await client.from('activities').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Activities table sync warning:', e);
       }
     }
 
     // 12. Also sync relational marketing campaigns
-    if (Array.isArray(data.mkt) && data.mkt.length > 0) {
+    if (Array.isArray(data.mkt)) {
       try {
-        const records = data.mkt.map((m: any) => ({
-          id: m.id,
-          date: m.date || '',
-          channel: m.channel || 'Digital',
-          type: m.type || '',
-          name: m.name || '',
-          spend: Number(m.spend) || 0,
-          reach: Number(m.reach) || 0,
-          clicks: Number(m.clicks) || 0,
-          leads: Number(m.leads) || 0,
-          url: m.url || '',
-          status: m.status || 'Aktif',
-          note: m.note || '',
-        }));
-        await client.from('marketing_campaigns').upsert(records);
+        if (data.mkt.length > 0) {
+          const records = data.mkt.map((m: any) => ({
+            id: m.id,
+            date: m.date || '',
+            channel: m.channel || 'Digital',
+            type: m.type || '',
+            name: m.name || '',
+            spend: Number(m.spend) || 0,
+            reach: Number(m.reach) || 0,
+            clicks: Number(m.clicks) || 0,
+            leads: Number(m.leads) || 0,
+            url: m.url || '',
+            status: m.status || 'Aktif',
+            note: m.note || '',
+          }));
+          await client.from('marketing_campaigns').upsert(records);
+          const ids = records.map((m: any) => m.id);
+          await client.from('marketing_campaigns').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        } else {
+          await client.from('marketing_campaigns').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Marketing campaigns table sync warning:', e);
       }
     }
 
     // 13. Also sync relational quotes
-    if (Array.isArray(data.quotes) && data.quotes.length > 0) {
+    if (Array.isArray(data.quotes)) {
       try {
-        const records = data.quotes.map((q: any) => ({
-          id: q.id,
-          no: q.no || '',
-          acc_id: q.accId || null,
-          deal_id: q.dealId || null,
-          perihal: q.perihal || '',
-          date: q.date || '',
-          valid_until: q.valid || '',
-          items: q.items || [],
-          total: Number(q.amount) || 0,
-          ppn: Number(q.ppn) || 0,
-          grand_total: (Number(q.amount) || 0) + (Number(q.ppn) || 0),
-          status: q.status || 'Draft',
-          sent_at: q.sentAt || '',
-        }));
-        await client.from('quotes').upsert(records);
+        if (data.quotes.length > 0) {
+          const records = data.quotes.map((q: any) => ({
+            id: q.id,
+            no: q.no || '',
+            acc_id: validAccIds.has(q.accId) ? q.accId : null,
+            deal_id: validDealIds.has(q.dealId) ? q.dealId : null,
+            perihal: q.perihal || '',
+            date: q.date || '',
+            valid_until: q.valid || '',
+            items: q.items || [],
+            total: Number(q.amount) || 0,
+            ppn: Number(q.ppn) || 0,
+            grand_total: (Number(q.amount) || 0) + (Number(q.ppn) || 0),
+            status: q.status || 'Draft',
+            sent_at: q.sentAt || '',
+          }));
+          await client.from('quotes').upsert(records);
+          const ids = records.map((q: any) => q.id);
+          await client.from('quotes').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        } else {
+          await client.from('quotes').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Quotes table sync warning:', e);
       }
     }
 
     // 14. Also sync relational instrument events
-    if (Array.isArray(data.instr) && data.instr.length > 0) {
+    if (Array.isArray(data.instr)) {
       try {
-        const records = data.instr.map((ev: any) => ({
-          id: ev.id,
-          name: ev.name || '',
-          type: ev.type || 'Downtime',
-          date: ev.date || '',
-          hours: Number(ev.hours) || 0,
-          note: ev.note || '',
-          pic: '',
-        }));
-        await client.from('instrument_events').upsert(records);
+        if (data.instr.length > 0) {
+          const records = data.instr.map((ev: any) => ({
+            id: ev.id,
+            name: ev.name || '',
+            type: ev.type || 'Downtime',
+            date: ev.date || '',
+            hours: Number(ev.hours) || 0,
+            note: ev.note || '',
+            pic: '',
+          }));
+          await client.from('instrument_events').upsert(records);
+          const ids = records.map((ev: any) => ev.id);
+          await client.from('instrument_events').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        } else {
+          await client.from('instrument_events').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Instrument events table sync warning:', e);
       }
     }
 
-    // 15. Also sync relational service catalog
-    if (Array.isArray(data.cat) && data.cat.length > 0) {
+    // 15. Also sync relational service catalog (supports both d/m/p and description/method/price)
+    if (Array.isArray(data.cat)) {
       try {
-        const records = data.cat.map((c: any) => ({
-          id: c.id,
-          description: c.description || c.name || '',
-          method: c.method || '',
-          price: Number(c.price) || 0,
-          status: c.status || 'Tersedia',
-          closed_reason: c.closedReason || '',
-          closed_from: c.closedFrom || '',
-          closed_until: c.closedUntil || '',
-        }));
-        await client.from('service_catalog').upsert(records);
+        if (data.cat.length > 0) {
+          const records = data.cat.map((c: any) => ({
+            id: c.id,
+            description: c.description || c.d || c.name || '',
+            method: c.method || c.m || '',
+            price: Number(c.price || c.p) || 0,
+            status: c.status || 'Tersedia',
+            closed_reason: c.closedReason || '',
+            closed_from: c.closedFrom || '',
+            closed_until: c.closedUntil || '',
+          }));
+          await client.from('service_catalog').upsert(records);
+          const ids = records.map((c: any) => c.id);
+          await client.from('service_catalog').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        } else {
+          await client.from('service_catalog').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Service catalog table sync warning:', e);
       }
     }
 
     // 16. Also sync relational users
-    if (Array.isArray(data.users) && data.users.length > 0) {
+    if (Array.isArray(data.users)) {
       try {
-        const records = data.users.map((u: any) => ({
-          id: u.id || `usr-${u.username}`,
-          username: u.username || u.name?.toLowerCase().replace(/\s+/g, '_') || '',
-          name: u.name || '',
-          role: u.role || 'staff',
-          department: u.department || '',
-          pin: u.pin || '',
-          allowed_tabs: u.allowedTabs || [],
-          is_active: u.isActive ?? true,
-          created_at: u.createdAt || new Date().toISOString(),
-          note: u.note || '',
-        }));
-        await client.from('users').upsert(records);
+        if (data.users.length > 0) {
+          const records = data.users.map((u: any) => ({
+            id: u.id || `usr-${u.username}`,
+            username: u.username || u.name?.toLowerCase().replace(/\s+/g, '_') || '',
+            name: u.name || '',
+            role: u.role || 'staff',
+            department: u.department || '',
+            pin: u.pin || '',
+            allowed_tabs: u.allowedTabs || [],
+            is_active: u.isActive ?? true,
+            created_at: u.createdAt || new Date().toISOString(),
+            note: u.note || '',
+          }));
+          await client.from('users').upsert(records);
+          const ids = records.map((u: any) => u.id);
+          await client.from('users').delete().not('id', 'in', `(${ids.map((id: string) => `"${id}"`).join(',')})`);
+        } else {
+          await client.from('users').delete().neq('id', '___');
+        }
       } catch (e) {
         console.warn('Users table sync warning:', e);
       }
