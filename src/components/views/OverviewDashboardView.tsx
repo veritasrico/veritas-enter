@@ -412,75 +412,176 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
     }));
   }, [state.fins, state.labs, selectedYear, periodMode]);
 
-  // Unit Bisnis diklasifikasikan langsung dari data riil pengujian lab & katalog layanan
+  // Kontribusi Instrumen & Alat Uji diklasifikasikan langsung per Master Instrumen (state.insts)
   const businessUnits = useMemo(() => {
-    let mineralCount = 0;
-    let calibCount = 0;
-    let envCount = 0;
-    let consultCount = 0;
+    const instList = state.insts || [];
 
-    filteredLabs.forEach((l) => {
-      const s = (l.service || '').toLowerCase();
-      const count = Number(l.analisa) || Number(l.masuk) || 1;
-      if (/icp|xrd|sem|xrf|aas|mineral|nikel|minerba|tambang|batu|logam/i.test(s)) {
-        mineralCount += count;
-      } else if (/kalibrasi|pm|verifikasi|alat|maintenance/i.test(s)) {
-        calibCount += count;
-      } else if (/lingkungan|air|emisi|limbah|udara|bod|cod|tds/i.test(s)) {
-        envCount += count;
-      } else {
-        consultCount += count;
+    // Ambil daftar unik nama instrumen dari Master Instrumen
+    const uniqueInstruments: string[] = [];
+    instList.forEach((inst) => {
+      const name = (inst.name || '').trim();
+      if (name && !uniqueInstruments.includes(name)) {
+        uniqueInstruments.push(name);
       }
     });
 
-    const totalCount = mineralCount + calibCount + envCount + consultCount;
+    const colors = [
+      '#0d9488', // Teal
+      '#6366f1', // Indigo
+      '#3b82f6', // Blue
+      '#0ea5e9', // Sky
+      '#f59e0b', // Amber
+      '#8b5cf6', // Purple
+      '#ec4899', // Pink
+      '#10b981', // Emerald
+      '#f97316', // Orange
+      '#14b8a6', // Cyan
+      '#a855f7', // Violet
+      '#e11d48', // Rose
+      '#64748b', // Slate
+    ];
 
-    if (totalCount === 0 && totalRevenue === 0) {
-      return [
-        { name: 'Pengujian Minerba, Nikel & Material', share: 0, val: 0, count: 0, color: '#0d9488' },
-        { name: 'Kalibrasi & Master Instrumentasi Lab', share: 0, val: 0, count: 0, color: '#3b82f6' },
-        { name: 'Pemantauan Lingkungan, Air & Emisi KAN', share: 0, val: 0, count: 0, color: '#f59e0b' },
-        { name: 'Konsultansi Mutu & Audit ISO/IEC 17025', share: 0, val: 0, count: 0, color: '#8b5cf6' },
-      ];
+    // Helper untuk mencocokkan nama layanan dengan nama instrumen
+    const matchesInst = (serviceStr: string, instName: string) => {
+      if (!serviceStr || !instName) return false;
+      const s = serviceStr.toLowerCase();
+      const target = instName.toLowerCase();
+      if (s.includes(target)) return true;
+      // Normalisasi karakter khusus (contoh: STA-TGA-DSC -> statgadsc)
+      const normS = s.replace(/[^a-z0-9]/g, '');
+      const normT = target.replace(/[^a-z0-9]/g, '');
+      if (normT.length >= 3 && normS.includes(normT)) return true;
+      // Regex word boundary
+      const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`\\b${escaped}\\b`, 'i').test(s);
+    };
+
+    const instCounts: Record<string, { count: number; workOrders: number; val: number }> = {};
+    uniqueInstruments.forEach((name) => {
+      instCounts[name] = { count: 0, workOrders: 0, val: 0 };
+    });
+
+    let otherCount = 0;
+    let otherWO = 0;
+    let otherVal = 0;
+
+    filteredLabs.forEach((l) => {
+      const s = l.service || '';
+      const sampleCount = Number(l.analisa) || Number(l.masuk) || 1;
+
+      // Nilai estimasi dari katalog tarif jika ada
+      let itemVal = 0;
+      const matchCat = (state.cat || []).find(
+        (c) =>
+          c.d.toLowerCase().includes(s.toLowerCase()) ||
+          s.toLowerCase().includes(c.d.toLowerCase())
+      );
+      if (matchCat) {
+        itemVal = matchCat.p * (Number(l.analisa) || sampleCount);
+      }
+
+      let matched = false;
+      for (const name of uniqueInstruments) {
+        if (matchesInst(s, name)) {
+          instCounts[name].count += sampleCount;
+          instCounts[name].workOrders += 1;
+          instCounts[name].val += itemVal;
+          matched = true;
+          break;
+        }
+      }
+
+      if (!matched) {
+        otherCount += sampleCount;
+        otherWO += 1;
+        otherVal += itemVal;
+      }
+    });
+
+    const totalSamples =
+      Object.values(instCounts).reduce((sum, c) => sum + c.count, 0) + otherCount;
+
+    // Jika belum ada data sama sekali
+    if (totalSamples === 0 && totalRevenue === 0) {
+      const fallbackList = uniqueInstruments.slice(0, 5);
+      return fallbackList.map((name, idx) => ({
+        name: `Instrumen ${name}`,
+        share: 0,
+        val: 0,
+        count: 0,
+        workOrders: 0,
+        color: colors[idx % colors.length],
+      }));
     }
 
-    const divisor = totalCount > 0 ? totalCount : 1;
-    const mShare = Math.round((mineralCount / divisor) * 100);
-    const cShare = Math.round((calibCount / divisor) * 100);
-    const eShare = Math.round((envCount / divisor) * 100);
-    const sShare = Math.max(0, 100 - (mShare + cShare + eShare));
+    const divisor = totalSamples > 0 ? totalSamples : 1;
+    const items: Array<{
+      name: string;
+      share: number;
+      val: number;
+      count: number;
+      workOrders: number;
+      color: string;
+    }> = [];
 
-    return [
-      {
-        name: 'Pengujian Minerba, Nikel & Material',
-        share: mShare,
-        val: Math.round((mShare / 100) * totalRevenue),
-        count: mineralCount,
-        color: '#0d9488',
-      },
-      {
-        name: 'Kalibrasi & Master Instrumentasi Lab',
-        share: cShare,
-        val: Math.round((cShare / 100) * totalRevenue),
-        count: calibCount,
-        color: '#3b82f6',
-      },
-      {
-        name: 'Pemantauan Lingkungan, Air & Emisi KAN',
-        share: eShare,
-        val: Math.round((eShare / 100) * totalRevenue),
-        count: envCount,
-        color: '#f59e0b',
-      },
-      {
-        name: 'Konsultansi Mutu & Audit ISO/IEC 17025',
-        share: sShare,
-        val: Math.round((sShare / 100) * totalRevenue),
-        count: consultCount,
-        color: '#8b5cf6',
-      },
-    ];
-  }, [filteredLabs, totalRevenue]);
+    let colorIndex = 0;
+    uniqueInstruments.forEach((name) => {
+      const c = instCounts[name];
+      const share = totalSamples > 0 ? Math.round((c.count / divisor) * 100) : 0;
+      const val =
+        c.val > 0
+          ? c.val
+          : totalRevenue > 0 && totalSamples > 0
+          ? Math.round((c.count / divisor) * totalRevenue)
+          : 0;
+
+      items.push({
+        name: `Instrumen ${name}`,
+        share,
+        val,
+        count: c.count,
+        workOrders: c.workOrders,
+        color: colors[colorIndex % colors.length],
+      });
+      colorIndex++;
+    });
+
+    if (otherCount > 0) {
+      const share = Math.round((otherCount / divisor) * 100);
+      const val =
+        otherVal > 0
+          ? otherVal
+          : totalRevenue > 0 && totalSamples > 0
+          ? Math.round((otherCount / divisor) * totalRevenue)
+          : 0;
+
+      items.push({
+        name: 'Instrumen & Uji Lainnya',
+        share,
+        val,
+        count: otherCount,
+        workOrders: otherWO,
+        color: '#64748b',
+      });
+    }
+
+    // Urutkan: Instrumen aktif (count > 0) di atas, diurutkan terbesar ke terkecil
+    items.sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Sesuaikan pembulatan persentase agar total segmen aktif pas 100%
+    const active = items.filter((i) => i.count > 0);
+    if (active.length > 0) {
+      const sumShare = active.reduce((s, i) => s + i.share, 0);
+      if (sumShare !== 100 && active.length > 0) {
+        active[0].share += 100 - sumShare;
+      }
+    }
+
+    return items;
+  }, [state.insts, filteredLabs, state.cat, totalRevenue]);
 
   // Top 5 Layanan dihitung dari data aktual work order pengujian lab & katalog layanan
   const topProducts = useMemo(() => {
@@ -1136,17 +1237,26 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Kontribusi Lini Bisnis Laboratorium (Donut Chart) */}
+        {/* Card 2: Kontribusi Master Instrumen & Alat Uji (Donut Chart) */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Kontribusi Unit Bisnis</h3>
-                <p className="text-xs text-slate-400">Proporsi pengujian per divisi laboratorium</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Kontribusi Master Instrumen</h3>
+                <p className="text-xs text-slate-400">Proporsi sampel &amp; beban pengujian per instrumen alat uji</p>
               </div>
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[11px] font-mono font-bold">
-                {totalLabOrders > 0 ? '100%' : '0%'}
-              </span>
+              <button
+                type="button"
+                onClick={() => onNavigate('insts')}
+                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 flex items-center gap-1 hover:underline"
+                title="Buka Master Instrumen & Kalibrasi"
+              >
+                <span>Master Alat</span>
+                <span className="font-mono text-[10px] rounded bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 border border-emerald-200 dark:border-emerald-800 font-bold">
+                  {state.insts?.length || 0}
+                </span>
+                <span>&rarr;</span>
+              </button>
             </div>
 
             {/* Donut SVG Dinamis */}
@@ -1196,18 +1306,23 @@ export const OverviewDashboardView: React.FC<OverviewDashboardViewProps> = ({
                   {formatRpCompact(totalRevenue)}
                 </span>
                 <span className="text-[9px] text-emerald-600 font-bold">
-                  {totalLabOrders} Work Order Lab
+                  {totalPhysicalSamples} Sampel ({totalLabOrders} WO)
                 </span>
               </div>
             </div>
 
-            {/* Legend List */}
-            <div className="mt-4 space-y-2">
+            {/* Legend List (Scrollable for instruments) */}
+            <div className="mt-4 max-h-[165px] overflow-y-auto pr-1 space-y-2 scrollbar-thin">
               {businessUnits.map((bu, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 truncate">
+                <div key={idx} className="flex items-center justify-between text-xs py-0.5">
+                  <div className="flex items-center gap-2 truncate min-w-0">
                     <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: bu.color }} />
                     <span className="truncate text-slate-700 dark:text-slate-300 font-medium">{bu.name}</span>
+                    {bu.count > 0 && (
+                      <span className="rounded bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-1.5 py-0.2 text-[9px] font-mono font-bold text-emerald-700 dark:text-emerald-300 shrink-0">
+                        {bu.count} Sampel
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0 font-mono">
                     <span className="font-bold text-slate-900 dark:text-white">{formatRpCompact(bu.val)}</span>
