@@ -34,7 +34,8 @@ import {
   DEFAULT_COMPETENCIES,
   DEFAULT_EMPLOYEES,
 } from './utils/seedData';
-import { loadLocalState, saveLocalState, syncToCloud, fetchFromCloud, clearAllLocalData, SyncStatus } from './utils/cloudSync';
+import { loadLocalState, saveLocalState, syncToCloud, fetchFromCloud, clearAllLocalData, normalizeState, SyncStatus } from './utils/cloudSync';
+import { supabase } from './utils/supabase';
 import { generateReminders } from './utils/reminderService';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -228,18 +229,57 @@ export default function App() {
           message: 'Data Terintegrasi',
         });
       } else {
-        performCloudSync();
+        // Cloud fetch failed or unreachable - do NOT overwrite cloud with initial seed!
+        setSyncStatus({
+          status: 'error',
+          lastSyncedAt: new Date().toISOString(),
+          latencyMs: 0,
+          message: 'Gagal memuat data cloud (Menggunakan cache lokal)',
+        });
       }
     });
 
-    // 2. Poll every 10 seconds: If another laptop updated data, automatically pull it in!
+    // 2. Supabase Realtime: Instant push updates across all laptops (< 100ms)
+    const channel = supabase
+      .channel('app_state_realtime_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'app_state',
+          filter: 'key=eq.current',
+        },
+        (payload: any) => {
+          if (!isMounted || isSyncingRef.current) return;
+          const newRow = payload.new;
+          if (newRow && newRow.data && newRow.synced_at) {
+            if (newRow.synced_at !== lastKnownServerSyncRef.current) {
+              lastKnownServerSyncRef.current = newRow.synced_at;
+              const rawData = typeof newRow.data === 'string' ? JSON.parse(newRow.data) : newRow.data;
+              const normalized = normalizeState(rawData);
+              setState(normalized);
+              saveLocalState(normalized);
+              setSyncStatus({
+                status: 'synced',
+                lastSyncedAt: newRow.synced_at,
+                latencyMs: 12,
+                message: 'Update Diterima Instan dari Tim (Realtime)',
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // 3. Fallback background polling (every 10s) in case WebSocket is closed/throttled
     const pollInterval = setInterval(async () => {
       if (isSyncingRef.current) return;
       try {
         const cloud = await fetchFromCloud();
         if (!isMounted) return;
         if (cloud.hasData && cloud.data && cloud.syncedAt) {
-          // If server's revision is different from what we last knew, update local state!
+          // If server revision is newer than local known revision, update local state!
           if (cloud.syncedAt !== lastKnownServerSyncRef.current) {
             lastKnownServerSyncRef.current = cloud.syncedAt;
             setState(cloud.data);
@@ -260,10 +300,11 @@ export default function App() {
     return () => {
       isMounted = false;
       clearInterval(pollInterval);
+      supabase.removeChannel(channel);
     };
   }, []);
 
-  // System auto-logging helper
+  // System auto-logging helper (synchronized to cloud and local state)
   const addLogEntry = useCallback(
     (action: LogEntry['action'], mod: string, ref: string, note: string) => {
       setState((prev) => {
@@ -280,10 +321,11 @@ export default function App() {
         const updatedLogs = [newLog, ...prev.log].slice(0, 3000);
         const nextState = { ...prev, log: updatedLogs };
         saveLocalState(nextState);
+        performCloudSync(nextState);
         return nextState;
       });
     },
-    [currentUser]
+    [currentUser, performCloudSync]
   );
 
   // State mutators
