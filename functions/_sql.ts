@@ -160,7 +160,7 @@ export async function setSqlAppState(env: Env, data: any, syncedAt: string): Pro
         for (const l of data.labs) {
           await db
             .prepare('INSERT INTO lab_work_orders (id, sid, acc_id, date, target_date, service, sample_name, masuk, analisa, sisa, status, analyst, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET sid=excluded.sid, service=excluded.service, masuk=excluded.masuk, analisa=excluded.analisa, sisa=excluded.sisa, status=excluded.status, note=excluded.note')
-            .bind(l.id, l.sid || '', l.accId || '', l.date || '', l.targetDate || '', l.service || '', l.sampleName || '', Number(l.masuk) || 1, Number(l.analisa) || 0, Number(l.sisa) || 0, l.status || 'Antrean', l.analyst || '', l.note || '')
+            .bind(l.id, l.sid || '', l.accId || '', l.date || '', l.completionDate || l.targetDate || '', l.service || '', l.sampleName || l.service || '', Number(l.masuk) || 1, Number(l.analisa) || 0, typeof l.sisa === 'number' ? l.sisa : ((Number(l.masuk) || 1) - (Number(l.analisa) || 0)), l.serviceStatus || l.status || 'Antrean', l.analyst || '', l.note || '')
             .run()
             .catch(() => {});
         }

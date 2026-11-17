@@ -156,9 +156,9 @@ export const INITIAL_SEED_DATA = {
       pin: '1234',
       allowedTabs: [
         'dash', 'slide_export', 'ai_analytics', 'cal',
-        'accounts', 'deals', 'quote', 'acts',
+        'accounts', 'deals', 'quote', 'cat', 'acts',
         'mkt',
-        'labdash', 'lab', 'instr',
+        'labdash', 'lab', 'insts', 'instr',
         'qcqa',
         'fin', 'monthly_report',
         'procurement', 'inv', 'sample_logistics',

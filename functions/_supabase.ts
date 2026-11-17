@@ -69,20 +69,24 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
 
     // 2. Also sync relational accounts
     if (Array.isArray(data.accounts) && data.accounts.length > 0) {
-      const records = data.accounts.map((a: any) => ({
-        id: a.id,
-        name: a.name || '',
-        pic: a.pic || '',
-        industry: a.industry || '',
-        email: a.email || '',
-        phone: a.phone || '',
-        source: a.source || '',
-        addr: a.addr || '',
-        notes: a.notes || '',
-        last_contact_date: a.lastContactDate || '',
-        referral_status: a.referralStatus || '',
-      }));
-      await client.from('accounts').upsert(records);
+      try {
+        const records = data.accounts.map((a: any) => ({
+          id: a.id,
+          name: a.name || '',
+          pic: a.pic || '',
+          industry: a.industry || '',
+          email: a.email || '',
+          phone: a.phone || '',
+          source: a.source || '',
+          addr: a.addr || '',
+          notes: a.notes || '',
+          last_contact_date: a.lastContactDate || '',
+          referral_status: a.referralStatus || '',
+        }));
+        await client.from('accounts').upsert(records);
+      } catch (e) {
+        console.warn('Accounts table sync warning:', e);
+      }
     }
 
     // 3. Also sync relational deals
@@ -108,7 +112,7 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
       }
     }
 
-    // 4. Also sync relational lab work orders
+    // 4. Also sync relational lab work orders (supports both TypeScript model and schema.sql)
     if (Array.isArray(data.labs) && data.labs.length > 0) {
       try {
         const records = data.labs.map((l: any) => ({
@@ -116,13 +120,13 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
           sid: l.sid || '',
           acc_id: l.accId || null,
           date: l.date || '',
-          target_date: l.targetDate || '',
+          target_date: l.completionDate || l.targetDate || '',
           service: l.service || '',
-          sample_name: l.sampleName || '',
+          sample_name: l.sampleName || l.service || '',
           masuk: Number(l.masuk) || 1,
           analisa: Number(l.analisa) || 0,
-          sisa: Number(l.sisa) || 0,
-          status: l.status || 'Antrean',
+          sisa: typeof l.sisa === 'number' ? l.sisa : ((Number(l.masuk) || 1) - (Number(l.analisa) || 0)),
+          status: l.serviceStatus || l.status || 'Antrean',
           analyst: l.analyst || '',
           note: l.note || '',
         }));
@@ -141,6 +145,9 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
           acc_id: f.accId || null,
           deal_id: f.dealId || null,
           lab_id: f.labId || null,
+          quote_id: f.quoteId || null,
+          sample_sid: f.sampleSid || null,
+          po: f.po || '',
           date: f.date || '',
           due: f.due || '',
           amount: Number(f.amount) || 0,
@@ -148,6 +155,8 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
           ppn: Number(f.ppn) || 0,
           perihal: f.perihal || '',
           note: f.note || '',
+          sent_at: f.sentAt || '',
+          items: f.items || [],
         }));
         await client.from('invoices').upsert(records);
       } catch (e) {
@@ -225,7 +234,7 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
       }
     }
 
-    // 9. Also sync relational competencies
+    // 9. Also sync relational competencies (supports both methodsAuthorized & methods)
     if (Array.isArray(data.competencies) && data.competencies.length > 0) {
       try {
         const records = data.competencies.map((c: any) => ({
@@ -235,8 +244,8 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
           role: c.role || '',
           department: c.department || '',
           education: c.education || '',
-          methods: c.methods || [],
-          instruments: c.instruments || [],
+          methods: c.methodsAuthorized || c.methods || [],
+          instruments: c.instrumentsAuthorized || c.instruments || [],
           k3_certified: c.k3Certified ?? false,
           bnsp_certified: c.bnspCertified ?? false,
           last_evaluated: c.lastEvaluated || '',
@@ -272,6 +281,128 @@ export async function saveToSupabase(env: Env, data: any, syncedAt: string): Pro
       }
     }
 
+    // 11. Also sync relational activities
+    if (Array.isArray(data.acts) && data.acts.length > 0) {
+      try {
+        const records = data.acts.map((a: any) => ({
+          id: a.id,
+          acc_id: a.accId || null,
+          type: a.type || 'Telepon',
+          date: a.date || '',
+          status: a.status || 'Terjadwal',
+          note: a.note || '',
+        }));
+        await client.from('activities').upsert(records);
+      } catch (e) {
+        console.warn('Activities table sync warning:', e);
+      }
+    }
+
+    // 12. Also sync relational marketing campaigns
+    if (Array.isArray(data.mkt) && data.mkt.length > 0) {
+      try {
+        const records = data.mkt.map((m: any) => ({
+          id: m.id,
+          date: m.date || '',
+          channel: m.channel || 'Digital',
+          type: m.type || '',
+          name: m.name || '',
+          spend: Number(m.spend) || 0,
+          reach: Number(m.reach) || 0,
+          clicks: Number(m.clicks) || 0,
+          leads: Number(m.leads) || 0,
+          url: m.url || '',
+          status: m.status || 'Aktif',
+          note: m.note || '',
+        }));
+        await client.from('marketing_campaigns').upsert(records);
+      } catch (e) {
+        console.warn('Marketing campaigns table sync warning:', e);
+      }
+    }
+
+    // 13. Also sync relational quotes
+    if (Array.isArray(data.quotes) && data.quotes.length > 0) {
+      try {
+        const records = data.quotes.map((q: any) => ({
+          id: q.id,
+          no: q.no || '',
+          acc_id: q.accId || null,
+          deal_id: q.dealId || null,
+          perihal: q.perihal || '',
+          date: q.date || '',
+          valid_until: q.valid || '',
+          items: q.items || [],
+          total: Number(q.amount) || 0,
+          ppn: Number(q.ppn) || 0,
+          grand_total: (Number(q.amount) || 0) + (Number(q.ppn) || 0),
+          status: q.status || 'Draft',
+          sent_at: q.sentAt || '',
+        }));
+        await client.from('quotes').upsert(records);
+      } catch (e) {
+        console.warn('Quotes table sync warning:', e);
+      }
+    }
+
+    // 14. Also sync relational instrument events
+    if (Array.isArray(data.instr) && data.instr.length > 0) {
+      try {
+        const records = data.instr.map((ev: any) => ({
+          id: ev.id,
+          name: ev.name || '',
+          type: ev.type || 'Downtime',
+          date: ev.date || '',
+          hours: Number(ev.hours) || 0,
+          note: ev.note || '',
+          pic: '',
+        }));
+        await client.from('instrument_events').upsert(records);
+      } catch (e) {
+        console.warn('Instrument events table sync warning:', e);
+      }
+    }
+
+    // 15. Also sync relational service catalog
+    if (Array.isArray(data.cat) && data.cat.length > 0) {
+      try {
+        const records = data.cat.map((c: any) => ({
+          id: c.id,
+          description: c.description || c.name || '',
+          method: c.method || '',
+          price: Number(c.price) || 0,
+          status: c.status || 'Tersedia',
+          closed_reason: c.closedReason || '',
+          closed_from: c.closedFrom || '',
+          closed_until: c.closedUntil || '',
+        }));
+        await client.from('service_catalog').upsert(records);
+      } catch (e) {
+        console.warn('Service catalog table sync warning:', e);
+      }
+    }
+
+    // 16. Also sync relational users
+    if (Array.isArray(data.users) && data.users.length > 0) {
+      try {
+        const records = data.users.map((u: any) => ({
+          id: u.id || `usr-${u.username}`,
+          username: u.username || u.name?.toLowerCase().replace(/\s+/g, '_') || '',
+          name: u.name || '',
+          role: u.role || 'staff',
+          department: u.department || '',
+          pin: u.pin || '',
+          allowed_tabs: u.allowedTabs || [],
+          is_active: u.isActive ?? true,
+          created_at: u.createdAt || new Date().toISOString(),
+          note: u.note || '',
+        }));
+        await client.from('users').upsert(records);
+      } catch (e) {
+        console.warn('Users table sync warning:', e);
+      }
+    }
+
     return true;
   } catch (err) {
     console.warn('Supabase save exception:', err);
@@ -289,6 +420,17 @@ export async function resetSupabase(env: Env): Promise<boolean> {
     await client.from('deals').delete().neq('id', '___');
     await client.from('lab_work_orders').delete().neq('id', '___');
     await client.from('invoices').delete().neq('id', '___');
+    await client.from('instruments').delete().neq('id', '___');
+    await client.from('procurements').delete().neq('id', '___');
+    await client.from('sample_deliveries').delete().neq('id', '___');
+    await client.from('competencies').delete().neq('id', '___');
+    await client.from('employees').delete().neq('id', '___');
+    await client.from('activities').delete().neq('id', '___');
+    await client.from('marketing_campaigns').delete().neq('id', '___');
+    await client.from('quotes').delete().neq('id', '___');
+    await client.from('instrument_events').delete().neq('id', '___');
+    await client.from('service_catalog').delete().neq('id', '___');
+    await client.from('users').delete().neq('id', '___');
     return true;
   } catch (err) {
     console.warn('Supabase reset error:', err);
